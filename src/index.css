@@ -1305,6 +1305,34 @@ textarea.input {
   max-width: 420px;
 }
 
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0;
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.google-btn {
+  width: 100%;
+  background: #fff;
+  color: #1e293b;
+  border-color: var(--border-strong);
+}
+
+.google-btn:hover {
+  background: var(--surface-2);
+}
+
 .privacy-note {
   display: flex;
   align-items: flex-start;

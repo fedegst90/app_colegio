@@ -1,5 +1,10 @@
 import { useState } from 'react'
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'
+import {
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+} from 'firebase/auth'
 import { auth } from '../lib/firebase'
 import { Card, Field, PageHeader } from '../components/UI'
 
@@ -20,6 +25,19 @@ export default function Login() {
       } else {
         await signInWithEmailAndPassword(auth, email, password)
       }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleGoogle() {
+    setError('')
+    setLoading(true)
+    try {
+      const provider = new GoogleAuthProvider()
+      await signInWithPopup(auth, provider)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -67,6 +85,17 @@ export default function Login() {
             </button>
           </div>
         </form>
+        <div className="login-divider">
+          <span>o</span>
+        </div>
+        <button
+          type="button"
+          className="btn google-btn"
+          onClick={handleGoogle}
+          disabled={loading}
+        >
+          Continuar con Google
+        </button>
         <button
           type="button"
           className="link-button"
