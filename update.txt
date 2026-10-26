@@ -1,0 +1,6 @@
+1- agregar top 5 de los mejores y peores de cada curso en el dashboard.
+2- en planificacion tiene tengo poder ver los contenidos y las ctividades q cargue para cada clase.
+3- en la pestaña notas al lado de Actividades del período | Resumen anual agrega un Grupos, donde se tiene 
+	q mostrar una distribucxion de grupos deacuerdo de las notas, osea q en cada grupo siempre haya uno con 
+	buenas calificaciones, y un boton para q sea totalmente aleatoria, en esta me tiene q pedir la cantidad de grupos q necesito.
+4- agrandar el font en 1 punto mas
