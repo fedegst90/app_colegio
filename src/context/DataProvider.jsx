@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { initDatabase, persistNow, run, transaction } from '../db/database'
 import { DataContext } from './data-context'
 
-export function DataProvider({ children }) {
+export function DataProvider({ uid, children }) {
   const [status, setStatus] = useState({
     ready: false,
     error: null,
@@ -11,7 +11,7 @@ export function DataProvider({ children }) {
 
   useEffect(() => {
     let active = true
-    initDatabase()
+    initDatabase(uid)
       .then(() => {
         if (active) {
           setStatus({ ready: true, error: null, version: 1 })
@@ -33,7 +33,7 @@ export function DataProvider({ children }) {
       active = false
       window.removeEventListener('beforeunload', handleUnload)
     }
-  }, [])
+  }, [uid])
 
   const refresh = useCallback(() => {
     setStatus((previous) => ({ ...previous, version: previous.version + 1 }))

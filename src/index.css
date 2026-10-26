@@ -1290,6 +1290,21 @@ textarea.input {
   color: var(--text-muted);
 }
 
+.login-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+}
+
 .privacy-note {
   display: flex;
   align-items: flex-start;

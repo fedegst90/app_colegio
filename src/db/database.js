@@ -1,6 +1,7 @@
 import initSqlJs from 'sql.js'
 import schema from './schema.sql?raw'
 import { clearSnapshot, loadSnapshot, saveSnapshot } from './storage'
+import { downloadSnapshot, uploadSnapshot } from '../lib/sync'
 
 const SCHEMA_VERSION = 5
 
@@ -10,6 +11,7 @@ let initPromise = null
 let persistTimer = null
 let persistPromise = null
 let transactionDepth = 0
+let currentUid = null
 
 function ensureDatabase() {
   if (!db) throw new Error('La base de datos todavía no está inicializada.')
@@ -160,7 +162,8 @@ function upgradeSchema() {
   return true
 }
 
-export async function initDatabase() {
+export async function initDatabase(uid = null) {
+  currentUid = uid
   if (db) return db
   if (initPromise) return initPromise
 
@@ -169,7 +172,17 @@ export async function initDatabase() {
       locateFile: (file) => `${import.meta.env.BASE_URL}${file}`,
     })
 
-    const snapshot = await loadSnapshot()
+    let snapshot = null
+    if (uid) {
+      try {
+        snapshot = await downloadSnapshot(uid)
+      } catch (error) {
+        console.error('No se pudo descargar la base desde Firebase', error)
+      }
+    }
+    if (!snapshot) {
+      snapshot = await loadSnapshot()
+    }
     db = snapshot ? new SQL.Database(snapshot) : new SQL.Database()
 
     rawRun('PRAGMA foreign_keys = ON')
@@ -227,7 +240,13 @@ export function schedulePersist() {
 export async function persistNow() {
   if (!db) return false
   if (persistPromise) return persistPromise
-  persistPromise = saveSnapshot(db.export()).finally(() => {
+  const bytes = db.export()
+  persistPromise = Promise.all([
+    saveSnapshot(bytes),
+    currentUid ? uploadSnapshot(currentUid, bytes).catch((error) => {
+      console.error('No se pudo subir la base a Firebase', error)
+    }) : Promise.resolve(),
+  ]).finally(() => {
     persistPromise = null
   })
   return persistPromise

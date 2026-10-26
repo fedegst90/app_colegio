@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { DataProvider } from './context/DataProvider'
 import { ToastProvider } from './context/ToastProvider'
+import { AuthProvider } from './context/AuthProvider'
+import { useAuth } from './context/auth-context'
 import { useData } from './context/data-context'
 import { Icon } from './components/Icon'
 import { ErrorScreen, LoadingScreen } from './components/UI'
@@ -11,6 +13,7 @@ import Students from './pages/Students'
 import Grades from './pages/Grades'
 import Program from './pages/Program'
 import Planning from './pages/Planning'
+import Login from './pages/Login'
 
 const NAV_ITEMS = [
   { page: 'dashboard', label: 'Panel', icon: 'dashboard' },
@@ -43,6 +46,7 @@ function buildHash(page, params = {}) {
 
 function AppShell() {
   const { ready, error } = useData()
+  const { signOut } = useAuth()
   const [route, setRoute] = useState(parseHash)
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -138,7 +142,7 @@ function AppShell() {
         <div className="sidebar-footer">
           <span className="db-dot" />
           <div>
-            <strong>Base local</strong>
+            <strong>Base local + nube</strong>
             <small>SQLite · guardado automático</small>
           </div>
         </div>
@@ -171,9 +175,16 @@ function AppShell() {
           </div>
           <div className="topbar-right">
             <span className="topbar-pill">
-              <span className="db-dot" /> Datos locales
+              <span className="db-dot" /> Datos sincronizados
             </span>
             <span className="topbar-date">{today}</span>
+            <button
+              type="button"
+              className="btn ghost small"
+              onClick={signOut}
+            >
+              <Icon name="x" size={15} /> Salir
+            </button>
           </div>
         </header>
 
@@ -183,12 +194,23 @@ function AppShell() {
   )
 }
 
+function AuthenticatedApp() {
+  const { user, loading } = useAuth()
+  if (loading) return <LoadingScreen />
+  if (!user) return <Login />
+  return (
+    <DataProvider uid={user.uid}>
+      <AppShell />
+    </DataProvider>
+  )
+}
+
 export default function App() {
   return (
     <ToastProvider>
-      <DataProvider>
-        <AppShell />
-      </DataProvider>
+      <AuthProvider>
+        <AuthenticatedApp />
+      </AuthProvider>
     </ToastProvider>
   )
 }
