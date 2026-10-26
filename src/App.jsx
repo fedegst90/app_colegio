@@ -112,14 +112,6 @@ function AppShell() {
             <strong>Aula Docente</strong>
             <small>Gestión de cátedras</small>
           </div>
-          <button
-            type="button"
-            className="icon-button sidebar-close"
-            onClick={() => setMobileOpen(false)}
-            aria-label="Cerrar menú"
-          >
-            <Icon name="x" size={18} />
-          </button>
         </div>
 
         <nav className="main-nav" aria-label="Navegación principal">
@@ -139,12 +131,14 @@ function AppShell() {
           ))}
         </nav>
 
-        <div className="sidebar-footer">
-          <span className="db-dot" />
-          <div>
-            <strong>Base local + nube</strong>
-            <small>SQLite · guardado automático</small>
-          </div>
+        <div className="sidebar-logout">
+          <button
+            type="button"
+            className="btn ghost sidebar-logout-button"
+            onClick={signOut}
+          >
+            Salir
+          </button>
         </div>
       </aside>
 
@@ -174,17 +168,7 @@ function AppShell() {
             </div>
           </div>
           <div className="topbar-right">
-            <span className="topbar-pill">
-              <span className="db-dot" /> Datos sincronizados
-            </span>
             <span className="topbar-date">{today}</span>
-            <button
-              type="button"
-              className="btn ghost small"
-              onClick={signOut}
-            >
-              <Icon name="x" size={15} /> Salir
-            </button>
           </div>
         </header>
 

@@ -231,16 +231,7 @@ export default function Program({ navigate, params = {} }) {
           <EmptyState
             icon="list"
             title="El programa está vacío"
-            description={`Agregá el primer tema de ${assignment.subject_name} para ${assignment.course_name} y después planificá las clases.`}
-            action={
-              <button
-                type="button"
-                className="btn primary"
-                onClick={openNewTopic}
-              >
-                <Icon name="plus" size={17} /> Agregar tema
-              </button>
-            }
+            description={`Usá el botón “Nuevo tema” para agregar el primero de ${assignment.subject_name} para ${assignment.course_name} y después planificá las clases.`}
           />
         ) : (
           <div className="topic-list">

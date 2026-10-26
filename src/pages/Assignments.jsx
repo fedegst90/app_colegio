@@ -357,17 +357,7 @@ export default function Assignments({ navigate }) {
           <EmptyState
             icon="graduation"
             title="Todavía no hay cátedras"
-            description="Una cátedra es la combinación de un curso, una materia y un régimen de períodos. Desde ahí cargás alumnos, actividades y notas."
-            action={
-              <button
-                type="button"
-                className="btn primary"
-                onClick={openCreate}
-                disabled={!canCreate}
-              >
-                <Icon name="plus" size={17} /> Crear la primera cátedra
-              </button>
-            }
+            description="Usá el botón “Nueva cátedra” para crear la primera. Una cátedra es la combinación de un curso, una materia y un régimen de períodos."
           />
         </Card>
       ) : (

@@ -243,16 +243,7 @@ export default function Dashboard({ navigate }) {
           <EmptyState
             icon="graduation"
             title="Ya tenés la base, falta crear las cátedras"
-            description="Asociá un colegio, un curso y una materia para empezar a cargar alumnos y notas."
-            action={
-              <button
-                type="button"
-                className="btn primary"
-                onClick={() => navigate('catedras')}
-              >
-                <Icon name="plus" size={17} /> Crear cátedra
-              </button>
-            }
+            description="Usá el paso 4 o el botón “Crear cátedra” para asociar un colegio, un curso y una materia y empezar a cargar alumnos y notas."
           />
         </Card>
       ) : (

@@ -295,7 +295,7 @@ export default function Settings() {
   async function handleExport() {
     const bytes = exportDatabaseBytes()
     downloadFile(
-      `aula-docente-${todayISO()}.sqlite`,
+      `aula-docente-${todayISO()}.bak`,
       new Blob([bytes], { type: 'application/octet-stream' }),
     )
     await persistNow()
@@ -412,16 +412,7 @@ export default function Settings() {
             <EmptyState
               icon="school"
               title="Todavía no hay colegios"
-              description="Agregá el primer colegio para empezar a organizar cursos y cátedras."
-              action={
-                <button
-                  type="button"
-                  className="btn primary"
-                  onClick={() => setSchoolForm({ ...EMPTY_SCHOOL })}
-                >
-                  <Icon name="plus" size={17} /> Agregar colegio
-                </button>
-              }
+              description="Usá el botón “Nuevo colegio” para agregar el primero y empezar a organizar cursos y cátedras."
             />
           ) : (
             <div className="entity-grid">
@@ -494,16 +485,7 @@ export default function Settings() {
             <EmptyState
               icon="book"
               title="Todavía no hay materias"
-              description="Creá las materias que dictás y después asociálas a un curso. El programa se carga en cada cátedra."
-              action={
-                <button
-                  type="button"
-                  className="btn primary"
-                  onClick={() => setSubjectForm({ ...EMPTY_SUBJECT })}
-                >
-                  <Icon name="plus" size={17} /> Agregar materia
-                </button>
-              }
+              description="Usá el botón “Nueva materia” para crear las que dictás y después asociarlas a un curso."
             />
           ) : (
             <div className="entity-grid">
@@ -608,21 +590,7 @@ export default function Settings() {
             <EmptyState
               icon="graduation"
               title="No hay cursos en esta selección"
-              description="Agregá un curso para poder inscribir alumnos y armar cátedras."
-              action={
-                <button
-                  type="button"
-                  className="btn primary"
-                  onClick={() =>
-                    setCourseForm({
-                      ...EMPTY_COURSE,
-                      school_id: schoolFilter || schools[0]?.id || '',
-                    })
-                  }
-                >
-                  <Icon name="plus" size={17} /> Nuevo curso
-                </button>
-              }
+              description="Usá el botón “Nuevo curso” para agregar uno y poder inscribir alumnos y armar cátedras."
             />
           ) : (
             <div className="course-groups">
@@ -832,8 +800,8 @@ export default function Settings() {
                   <Icon name="download" size={20} />
                 </span>
                 <div>
-                  <strong>Exportar base de datos</strong>
-                  <p>Descargá un archivo SQLite con toda la información.</p>
+                  <strong>Exportar copia de seguridad</strong>
+                  <p>Descargá una copia de seguridad con toda la información.</p>
                 </div>
                 <button type="button" className="btn" onClick={handleExport}>
                   Descargar
@@ -857,7 +825,7 @@ export default function Settings() {
                 <input
                   ref={importRef}
                   type="file"
-                  accept=".sqlite,.db,.sqlite3,application/octet-stream"
+                  accept=".bak,.sqlite,.db,.sqlite3,application/octet-stream"
                   className="visually-hidden"
                   onChange={handleImport}
                 />
@@ -1194,13 +1162,6 @@ export default function Settings() {
         ) : null}
       </Modal>
 
-      <div className="privacy-note">
-        <Icon name="database" size={16} />
-        <span>
-          Los datos se guardan automáticamente en este navegador mediante SQLite
-          y IndexedDB. No se envía información a ningún servidor.
-        </span>
-      </div>
     </div>
   )
 }

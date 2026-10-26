@@ -762,15 +762,8 @@ export default function Grades({ navigate, params = {} }) {
               <div className="inline-empty">
                 <p>
                   Todavía no hay actividades en {period?.name ?? 'este período'}.
-                  Agregá la primera para empezar a cargar notas.
+                  Usá el botón "Nueva actividad" para agregar la primera.
                 </p>
-                <button
-                  type="button"
-                  className="btn primary small"
-                  onClick={openNewActivity}
-                >
-                  <Icon name="plus" size={16} /> Nueva actividad
-                </button>
               </div>
             ) : null}
           </Card>

@@ -352,18 +352,9 @@ export default function Students({ navigate, params = {} }) {
             title="No hay alumnos en este curso y año"
             description="Podés cargarlos de a uno o pegar un listado completo con la carga masiva."
             action={
-              <div className="inline-actions">
-                <button type="button" className="btn" onClick={openBulk}>
-                  Carga masiva
-                </button>
-                <button
-                  type="button"
-                  className="btn primary"
-                  onClick={openNewStudent}
-                >
-                  <Icon name="plus" size={17} /> Agregar alumno
-                </button>
-              </div>
+              <button type="button" className="btn" onClick={openBulk}>
+                Carga masiva
+              </button>
             }
           />
         ) : filteredStudents.length === 0 ? (

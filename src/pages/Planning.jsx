@@ -574,9 +574,6 @@ export default function Planning({ navigate, params = {} }) {
           <button type="button" className="btn" onClick={openAutoPlan}>
             <Icon name="calendar" size={16} /> Generar automáticamente
           </button>
-          <button type="button" className="btn primary" onClick={openNewPlan}>
-            <Icon name="plus" size={16} /> Planificar clase
-          </button>
         </div>
       </div>
 

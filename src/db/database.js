@@ -1,7 +1,12 @@
 import initSqlJs from 'sql.js'
 import schema from './schema.sql?raw'
-import { clearSnapshot, loadSnapshot, saveSnapshot } from './storage'
-import { downloadSnapshot, uploadSnapshot } from '../lib/sync'
+import { loadSnapshot, saveSnapshot } from './storage'
+import {
+  downloadSnapshot,
+  getRemoteMeta,
+  sha256Hex,
+  uploadSnapshot,
+} from '../lib/sync'
 
 const SCHEMA_VERSION = 5
 
@@ -12,6 +17,8 @@ let persistTimer = null
 let persistPromise = null
 let transactionDepth = 0
 let currentUid = null
+let lastPersistedHash = null
+let dirty = false
 
 function ensureDatabase() {
   if (!db) throw new Error('La base de datos todavía no está inicializada.')
@@ -173,23 +180,60 @@ export async function initDatabase(uid = null) {
     })
 
     let snapshot = null
+    let remoteHash = null
+
     if (uid) {
       try {
-        snapshot = await downloadSnapshot(uid)
+        const localBytes = await loadSnapshot()
+        let localHash = localBytes ? await sha256Hex(localBytes) : null
+
+        const meta = await getRemoteMeta(uid)
+        if (meta?.hash && localHash && meta.hash === localHash) {
+          // El snapshot local ya está al día: evitamos la descarga.
+          snapshot = localBytes
+          remoteHash = meta.hash
+        } else {
+          const downloaded = await downloadSnapshot(uid)
+          if (downloaded?.bytes) {
+            snapshot = downloaded.bytes
+            remoteHash = downloaded.hash
+          } else if (localBytes) {
+            snapshot = localBytes
+            remoteHash = localHash
+          }
+        }
       } catch (error) {
-        console.error('No se pudo descargar la base desde Firebase', error)
+        console.error('No se pudo sincronizar la base desde Firebase', error)
+        const localBytes = await loadSnapshot()
+        if (localBytes) {
+          snapshot = localBytes
+          remoteHash = await sha256Hex(localBytes)
+        }
       }
     }
+
     if (!snapshot) {
-      snapshot = await loadSnapshot()
+      const localBytes = await loadSnapshot()
+      if (localBytes) {
+        snapshot = localBytes
+        remoteHash = await sha256Hex(localBytes)
+      }
     }
+
     db = snapshot ? new SQL.Database(snapshot) : new SQL.Database()
 
     rawRun('PRAGMA foreign_keys = ON')
 
     const upgraded = upgradeSchema()
     seedSettings()
-    if (upgraded) await saveSnapshot(db.export())
+    lastPersistedHash = remoteHash
+    dirty = false
+
+    if (upgraded) {
+      dirty = true
+      lastPersistedHash = null
+      await persistNow()
+    }
 
     return db
   })()
@@ -218,7 +262,10 @@ export function get(sql, params = []) {
 
 export function run(sql, params = []) {
   rawRun(sql, params)
-  if (transactionDepth === 0) schedulePersist()
+  if (transactionDepth === 0) {
+    dirty = true
+    schedulePersist()
+  }
   return rawAll('SELECT last_insert_rowid() AS id')[0]?.id ?? null
 }
 
@@ -234,21 +281,48 @@ export function schedulePersist() {
   persistTimer = setTimeout(() => {
     persistTimer = null
     persistNow()
-  }, 200)
+  }, 1500)
 }
 
 export async function persistNow() {
   if (!db) return false
   if (persistPromise) return persistPromise
+  if (!dirty && lastPersistedHash) return true
+
+  cancelScheduledPersist()
+
+  // Compactar antes de exportar para reducir el tamaño real.
+  try {
+    rawRun('VACUUM')
+  } catch (error) {
+    console.error('No se pudo compactar la base', error)
+  }
+
   const bytes = db.export()
+  const hash = await sha256Hex(bytes)
+
+  if (hash && hash === lastPersistedHash) {
+    dirty = false
+    return true
+  }
+
   persistPromise = Promise.all([
     saveSnapshot(bytes),
-    currentUid ? uploadSnapshot(currentUid, bytes).catch((error) => {
-      console.error('No se pudo subir la base a Firebase', error)
-    }) : Promise.resolve(),
-  ]).finally(() => {
-    persistPromise = null
-  })
+    currentUid
+      ? uploadSnapshot(currentUid, bytes).catch((error) => {
+          console.error('No se pudo subir la base a Firebase', error)
+        })
+      : Promise.resolve(),
+  ])
+    .then(() => {
+      lastPersistedHash = hash
+      dirty = false
+      return true
+    })
+    .finally(() => {
+      persistPromise = null
+    })
+
   return persistPromise
 }
 
@@ -259,6 +333,7 @@ export function transaction(callback) {
   try {
     const result = callback()
     rawRun('COMMIT')
+    dirty = true
     return result
   } catch (error) {
     rawRun('ROLLBACK')
@@ -283,7 +358,13 @@ export function setSetting(key, value) {
 }
 
 export function exportDatabaseBytes() {
-  return ensureDatabase().export()
+  const database = ensureDatabase()
+  try {
+    rawRun('VACUUM')
+  } catch (error) {
+    console.error('No se pudo compactar la base', error)
+  }
+  return database.export()
 }
 
 export async function importDatabaseBytes(bytes) {
@@ -302,11 +383,13 @@ export async function importDatabaseBytes(bytes) {
   db = nextDatabase
   upgradeSchema()
   seedSettings()
-  await saveSnapshot(db.export())
+  dirty = true
+  lastPersistedHash = null
+  await persistNow()
 }
 
 export async function resetDatabase() {
-  const database = ensureDatabase()
+  ensureDatabase()
   const tables = rawAll(
     "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
   )
@@ -318,7 +401,12 @@ export async function resetDatabase() {
   rawRun(`PRAGMA user_version = ${SCHEMA_VERSION}`)
   rawRun('PRAGMA foreign_keys = ON')
   cancelScheduledPersist()
-  await saveSnapshot(database.export())
-  await clearSnapshot().catch(() => {})
-  await saveSnapshot(database.export())
+  try {
+    rawRun('VACUUM')
+  } catch (error) {
+    console.error('No se pudo compactar la base', error)
+  }
+  dirty = true
+  lastPersistedHash = null
+  await persistNow()
 }
