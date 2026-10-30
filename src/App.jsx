@@ -103,6 +103,7 @@ function AppShell() {
 
   return (
     <div className="app-shell">
+      <div className="sidebar-trigger" aria-hidden="true" />
       <aside className={`sidebar ${mobileOpen ? 'open' : ''}`}>
         <div className="brand">
           <span className="brand-mark">

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { run } from '../db/database'
 import { useData } from '../context/data-context'
 import { useSqlQuery } from '../hooks/useSqlQuery'
@@ -24,9 +24,10 @@ const EMPTY_TOPIC = {
 export default function Program({ navigate, params = {} }) {
   const { mutate, mutateMany } = useData()
   const toast = useToast()
-  const [assignmentId, setAssignmentId] = useState(
-    params.assignment ? String(params.assignment) : '',
-  )
+  const [assignmentId, setAssignmentId] = useState(() => {
+    if (params.assignment) return String(params.assignment)
+    return localStorage.getItem('selectedAssignmentId') || ''
+  })
   const [topicForm, setTopicForm] = useState(null)
 
   const assignments = useSqlQuery(
@@ -45,6 +46,18 @@ export default function Program({ navigate, params = {} }) {
   const assignment =
     assignments.find((item) => String(item.id) === String(assignmentId)) ??
     assignments[0]
+
+  useEffect(() => {
+    if (assignments.length === 0) return
+    const valid = assignments.some(
+      (item) => String(item.id) === String(assignmentId),
+    )
+    if (!valid && assignment) {
+      const next = String(assignment.id)
+      setAssignmentId(next)
+      localStorage.setItem('selectedAssignmentId', next)
+    }
+  }, [assignments, assignmentId, assignment])
 
   const topics = useSqlQuery(
     `SELECT t.*,
@@ -184,7 +197,10 @@ export default function Program({ navigate, params = {} }) {
             <select
               className="input"
               value={assignment.id}
-              onChange={(event) => setAssignmentId(event.target.value)}
+              onChange={(event) => {
+                setAssignmentId(event.target.value)
+                localStorage.setItem('selectedAssignmentId', event.target.value)
+              }}
             >
               {assignments.map((item) => (
                 <option key={item.id} value={item.id}>

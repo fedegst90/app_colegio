@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useData } from '../context/data-context'
 import { useSqlQuery } from '../hooks/useSqlQuery'
 import { Icon } from '../components/Icon'
@@ -39,7 +39,9 @@ const STATUS_LABELS = {
 
 export default function Dashboard({ navigate }) {
   const { version } = useData()
-  const [selectedId, setSelectedId] = useState('')
+  const [selectedId, setSelectedId] = useState(() => {
+    return localStorage.getItem('selectedAssignmentId') || ''
+  })
 
   const overview = useMemo(() => {
     void version
@@ -61,6 +63,18 @@ export default function Dashboard({ navigate }) {
   const assignment =
     assignments.find((item) => String(item.id) === String(selectedId)) ??
     assignments[0]
+
+  useEffect(() => {
+    if (assignments.length === 0) return
+    const valid = assignments.some(
+      (item) => String(item.id) === String(selectedId),
+    )
+    if (!valid) {
+      const next = String(assignments[0].id)
+      setSelectedId(next)
+      localStorage.setItem('selectedAssignmentId', next)
+    }
+  }, [assignments, selectedId])
 
   const stats = useMemo(
     () => (assignment ? getAssignmentStats(assignment.id) : null),
@@ -270,7 +284,10 @@ export default function Dashboard({ navigate }) {
                 <select
                   className="input"
                   value={assignment.id}
-                  onChange={(event) => setSelectedId(event.target.value)}
+                  onChange={(event) => {
+                    setSelectedId(event.target.value)
+                    localStorage.setItem('selectedAssignmentId', event.target.value)
+                  }}
                 >
                   {assignments.map((item) => (
                     <option key={item.id} value={item.id}>

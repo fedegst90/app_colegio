@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useData } from '../context/data-context'
 import { useSqlQuery } from '../hooks/useSqlQuery'
 import { useToast } from '../context/toast-context'
@@ -40,9 +40,10 @@ const EMPTY_ACTIVITY = {
 export default function Grades({ navigate, params = {} }) {
   const { mutate } = useData()
   const toast = useToast()
-  const [assignmentId, setAssignmentId] = useState(
-    params.assignment ? String(params.assignment) : '',
-  )
+  const [assignmentId, setAssignmentId] = useState(() => {
+    if (params.assignment) return String(params.assignment)
+    return localStorage.getItem('selectedAssignmentId') || ''
+  })
   const [periodId, setPeriodId] = useState('')
   const [view, setView] = useState('actividades')
   const [activityForm, setActivityForm] = useState(null)
@@ -66,6 +67,18 @@ export default function Grades({ navigate, params = {} }) {
   const assignment =
     assignments.find((item) => String(item.id) === String(assignmentId)) ??
     assignments[0]
+
+  useEffect(() => {
+    if (assignments.length === 0) return
+    const valid = assignments.some(
+      (item) => String(item.id) === String(assignmentId),
+    )
+    if (!valid && assignment) {
+      const next = String(assignment.id)
+      setAssignmentId(next)
+      localStorage.setItem('selectedAssignmentId', next)
+    }
+  }, [assignments, assignmentId, assignment])
 
   const periods = useSqlQuery(
     'SELECT * FROM periods WHERE assignment_id = ? ORDER BY position, id',
@@ -240,6 +253,7 @@ export default function Grades({ navigate, params = {} }) {
   function changeAssignment(value) {
     setAssignmentId(value)
     setPeriodId('')
+    localStorage.setItem('selectedAssignmentId', value)
   }
 
   function saveGrade(activityId, studentId, value) {
