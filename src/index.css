@@ -114,39 +114,76 @@ code {
   min-height: 100dvh;
 }
 
-.sidebar-trigger {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 10px;
-  height: 100vh;
-  height: 100dvh;
-  z-index: 55;
-}
-
 .sidebar {
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 0;
-  width: 252px;
+  width: 72px;
+  flex: 0 0 72px;
   height: 100vh;
   height: 100dvh;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 22px 16px;
+  gap: 14px;
+  padding: 22px 12px;
   background: var(--sidebar);
   color: #e2e8f0;
   z-index: 60;
-  transform: translateX(-100%);
-  transition: transform 0.18s ease;
-  box-shadow: 24px 0 48px -24px rgba(15, 23, 42, 0.5);
+  overflow: hidden;
+  transition: width 0.18s ease, padding 0.18s ease, flex-basis 0.18s ease;
 }
 
-.sidebar-trigger:hover ~ .sidebar,
 .sidebar:hover,
 .sidebar.open {
-  transform: translateX(0);
+  width: 252px;
+  flex-basis: 252px;
+  padding: 22px 16px;
+}
+
+.sidebar .brand div,
+.sidebar .nav-item span,
+.sidebar .sidebar-logout-button span {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: opacity 0.12s ease, width 0.18s ease;
+}
+
+.sidebar:hover .brand div,
+.sidebar:hover .nav-item span,
+.sidebar:hover .sidebar-logout-button span,
+.sidebar.open .brand div,
+.sidebar.open .nav-item span,
+.sidebar.open .sidebar-logout-button span {
+  opacity: 1;
+  width: auto;
+}
+
+.sidebar .nav-item {
+  justify-content: center;
+}
+
+.sidebar:hover .nav-item,
+.sidebar.open .nav-item {
+  justify-content: flex-start;
+}
+
+.sidebar .brand {
+  justify-content: center;
+}
+
+.sidebar:hover .brand,
+.sidebar.open .brand {
+  justify-content: flex-start;
+}
+
+.sidebar .sidebar-logout-button {
+  justify-content: center;
+}
+
+.sidebar:hover .sidebar-logout-button,
+.sidebar.open .sidebar-logout-button {
+  justify-content: flex-start;
 }
 
 .brand {

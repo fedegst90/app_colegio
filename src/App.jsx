@@ -103,7 +103,6 @@ function AppShell() {
 
   return (
     <div className="app-shell">
-      <div className="sidebar-trigger" aria-hidden="true" />
       <aside className={`sidebar ${mobileOpen ? 'open' : ''}`}>
         <div className="brand">
           <span className="brand-mark">
@@ -137,8 +136,10 @@ function AppShell() {
             type="button"
             className="btn ghost sidebar-logout-button"
             onClick={signOut}
+            aria-label="Salir"
           >
-            Salir
+            <Icon name="logout" size={18} />
+            <span>Salir</span>
           </button>
         </div>
       </aside>
