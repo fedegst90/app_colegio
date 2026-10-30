@@ -676,6 +676,14 @@ export default function Planning({ navigate, params = {} }) {
                         <button
                           type="button"
                           className="icon-button"
+                          title="Ver contenidos y actividad de la clase"
+                          onClick={() => setDetailPlan(plan)}
+                        >
+                          <Icon name="book" size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className="icon-button"
                           title="Ver planificación en nueva pestaña"
                           onClick={() => openPlanPreview(plan)}
                         >

@@ -87,6 +87,22 @@ export default function Dashboard({ navigate }) {
     return map
   }, [weekly])
 
+  const assignmentRankings = useMemo(() => {
+    void version
+    return assignments.map((item) => {
+      const itemStats = getAssignmentStats(item.id)
+      const ranked = (itemStats?.ranking ?? []).filter((row) => row.hasData)
+      const worst = [...ranked]
+        .sort((a, b) => (a.final ?? 0) - (b.final ?? 0))
+        .slice(0, 5)
+      return {
+        assignment: item,
+        best: ranked.slice(0, 5),
+        worst,
+      }
+    })
+  }, [assignments, version])
+
   const now = new Date()
   const todayLabel = now.toLocaleDateString('es-AR', {
     weekday: 'long',
@@ -563,6 +579,83 @@ export default function Dashboard({ navigate }) {
                   )}
                 </Card>
               </div>
+
+              <Card>
+                <CardHeader
+                  title="Rankings por cátedra"
+                  subtitle="Top 5 mejores y peores de cada cátedra según la nota final anual."
+                />
+                {assignmentRankings.length === 0 ? (
+                  <EmptyState
+                    icon="users"
+                    title="Sin cátedras para rankear"
+                    description="Creá cátedras y cargá notas para ver los rankings."
+                  />
+                ) : (
+                  <div className="course-ranking-list">
+                    {assignmentRankings.map(({ assignment: item, best, worst }) => (
+                      <section className="course-ranking-block" key={item.id}>
+                        <h3>
+                          {item.school_name} · {item.course_name} ·{' '}
+                          {item.subject_name} · {item.school_year}
+                        </h3>
+                        <div className="dashboard-grid">
+                          <div>
+                            <h4 className="muted small">Mejores 5</h4>
+                            {best.length === 0 ? (
+                              <p className="muted small">Sin notas cargadas.</p>
+                            ) : (
+                              <div className="ranking-list">
+                                {best.map((row, index) => (
+                                  <div className="ranking-row" key={row.student.id}>
+                                    <span className="ranking-position">{index + 1}</span>
+                                    <div className="ranking-name">
+                                      <strong>{studentFullName(row.student)}</strong>
+                                    </div>
+                                    <span
+                                      className={`grade-pill tone-${gradeTone(
+                                        row.final,
+                                        stats?.passing ?? 6,
+                                      )}`}
+                                    >
+                                      {formatGrade(row.final)}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="muted small">Peores 5</h4>
+                            {worst.length === 0 ? (
+                              <p className="muted small">Sin notas cargadas.</p>
+                            ) : (
+                              <div className="ranking-list">
+                                {worst.map((row, index) => (
+                                  <div className="ranking-row" key={row.student.id}>
+                                    <span className="ranking-position">{index + 1}</span>
+                                    <div className="ranking-name">
+                                      <strong>{studentFullName(row.student)}</strong>
+                                    </div>
+                                    <span
+                                      className={`grade-pill tone-${gradeTone(
+                                        row.final,
+                                        stats?.passing ?? 6,
+                                      )}`}
+                                    >
+                                      {formatGrade(row.final)}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </section>
+                    ))}
+                  </div>
+                )}
+              </Card>
 
               <div className="dashboard-grid">
                 <Card>

@@ -868,6 +868,18 @@ export default function Grades({ navigate, params = {} }) {
                   type="button"
                   className="btn"
                   onClick={() => {
+                    const requested = Number(groupCount)
+                    if (!Number.isFinite(requested) || requested < 1) {
+                      toast('Indicá una cantidad válida de grupos.', 'error')
+                      return
+                    }
+                    if (requested > groupStudents.length) {
+                      toast(
+                        'La cantidad de grupos no puede superar la cantidad de alumnos.',
+                        'error',
+                      )
+                      return
+                    }
                     setGroupMode('balanced')
                     setRandomSeed((value) => value + 1)
                   }}
@@ -878,6 +890,18 @@ export default function Grades({ navigate, params = {} }) {
                   type="button"
                   className="btn primary"
                   onClick={() => {
+                    const requested = Number(groupCount)
+                    if (!Number.isFinite(requested) || requested < 1) {
+                      toast('Indicá una cantidad válida de grupos.', 'error')
+                      return
+                    }
+                    if (requested > groupStudents.length) {
+                      toast(
+                        'La cantidad de grupos no puede superar la cantidad de alumnos.',
+                        'error',
+                      )
+                      return
+                    }
                     setGroupMode('random')
                     setRandomSeed((value) => value + 1)
                   }}

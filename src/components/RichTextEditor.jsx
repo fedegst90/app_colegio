@@ -27,6 +27,16 @@ export function RichTextEditor({ value, onChange, placeholder }) {
     onChange?.(ref.current.innerHTML)
   }
 
+  function insertPlainText(event) {
+    event.preventDefault()
+    const text =
+      event.clipboardData?.getData('text/plain') ??
+      event.dataTransfer?.getData('text/plain') ??
+      ''
+    document.execCommand('insertText', false, text)
+    handleInput()
+  }
+
   return (
     <div className="rich-editor">
       <div className="rich-toolbar" role="toolbar">
@@ -160,6 +170,8 @@ export function RichTextEditor({ value, onChange, placeholder }) {
         contentEditable
         suppressContentEditableWarning
         onInput={handleInput}
+        onPaste={insertPlainText}
+        onDrop={insertPlainText}
         data-placeholder={placeholder}
       />
     </div>
