@@ -74,12 +74,14 @@ export default function Settings() {
 
   const schools = useSqlQuery(
     `SELECT sh.*,
-      (SELECT COUNT(*) FROM courses c WHERE c.school_id = sh.id) AS course_count,
+      (SELECT COUNT(*) FROM courses c WHERE c.school_id = sh.id AND c.school_year = sh.school_year) AS course_count,
       (SELECT COUNT(*) FROM students st
        JOIN courses c ON c.id = st.course_id
-       WHERE c.school_id = sh.id AND st.active = 1) AS student_count
+       WHERE c.school_id = sh.id AND st.active = 1 AND st.school_year = sh.school_year) AS student_count
      FROM schools sh
+     WHERE sh.school_year = ?
      ORDER BY sh.name COLLATE NOCASE`,
+    [Number(defaultYear) || 0],
   )
 
   const subjects = useSqlQuery(
@@ -89,16 +91,20 @@ export default function Settings() {
        WHERE a.subject_id = sub.id) AS topic_count,
       (SELECT COUNT(*) FROM assignments a WHERE a.subject_id = sub.id) AS assignment_count
      FROM subjects sub
+     WHERE sub.school_year = ?
      ORDER BY sub.name COLLATE NOCASE`,
+    [Number(defaultYear) || 0],
   )
 
   const courses = useSqlQuery(
     `SELECT c.*, sh.name AS school_name,
-      (SELECT COUNT(*) FROM students st WHERE st.course_id = c.id AND st.active = 1) AS student_count,
-      (SELECT COUNT(*) FROM assignments a WHERE a.course_id = c.id) AS assignment_count
+      (SELECT COUNT(*) FROM students st WHERE st.course_id = c.id AND st.active = 1 AND st.school_year = c.school_year) AS student_count,
+      (SELECT COUNT(*) FROM assignments a WHERE a.course_id = c.id AND a.school_year = c.school_year) AS assignment_count
      FROM courses c
      JOIN schools sh ON sh.id = c.school_id
+     WHERE c.school_year = ?
      ORDER BY sh.name COLLATE NOCASE, c.year, c.name COLLATE NOCASE`,
+    [Number(defaultYear) || 0],
   )
 
   const schoolYears = useSqlQuery(
@@ -146,7 +152,8 @@ export default function Settings() {
       ])
       toast('Colegio actualizado.')
     } else {
-      mutate('INSERT INTO schools (name, address, notes) VALUES (?, ?, ?)', [
+      mutate('INSERT INTO schools (school_year, name, address, notes) VALUES (?, ?, ?, ?)', [
+        Number(defaultYear) || new Date().getFullYear(),
         name,
         schoolForm.address.trim(),
         schoolForm.notes.trim(),
@@ -187,8 +194,9 @@ export default function Settings() {
       toast('Materia actualizada.')
     } else {
       mutate(
-        'INSERT INTO subjects (name, code, color, description) VALUES (?, ?, ?, ?)',
+        'INSERT INTO subjects (school_year, name, code, color, description) VALUES (?, ?, ?, ?, ?)',
         [
+          Number(defaultYear) || new Date().getFullYear(),
           name,
           subjectForm.code.trim(),
           subjectForm.color,
@@ -236,8 +244,9 @@ export default function Settings() {
       toast('Curso actualizado.')
     } else {
       mutate(
-        'INSERT INTO courses (school_id, name, year, division, notes) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO courses (school_year, school_id, name, year, division, notes) VALUES (?, ?, ?, ?, ?, ?)',
         [
+          Number(defaultYear) || new Date().getFullYear(),
           Number(courseForm.school_id),
           name,
           year,
@@ -1018,7 +1027,34 @@ export default function Settings() {
           <Card>
             <CardHeader
               title="Año lectivo"
-              subtitle="Creá un nuevo año y, si querés, copiá las cátedras del año anterior. Los alumnos no se copian."
+              subtitle="Elegí el año activo para toda la aplicación. Los datos de otros años no se borran."
+            />
+            <form className="form-grid" onSubmit={(event) => {
+              event.preventDefault()
+              setSetting('default_school_year', defaultYear)
+              refresh()
+              toast('Año lectivo activo actualizado.')
+            }}>
+              <Field label="Año lectivo activo" hint="Se usa en todas las pestañas.">
+                <input
+                  className="input"
+                  type="number"
+                  min="2000"
+                  max="2100"
+                  value={defaultYear}
+                  onChange={(event) => setDefaultYear(event.target.value)}
+                />
+              </Field>
+              <div className="form-actions full">
+                <button type="submit" className="btn primary small">
+                  Guardar año activo
+                </button>
+              </div>
+            </form>
+
+            <CardHeader
+              title="Crear nuevo año"
+              subtitle="Crea un año vacío (sin datos) o copia las cátedras del año anterior. No copia alumnos."
             />
             <div className="form-grid">
               <Field label="Nuevo año lectivo">

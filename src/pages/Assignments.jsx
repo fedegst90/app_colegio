@@ -52,7 +52,6 @@ export default function Assignments({ navigate }) {
   const [form, setForm] = useState(null)
   const [scheduleAssignment, setScheduleAssignment] = useState(null)
   const [slotForm, setSlotForm] = useState({ ...EMPTY_SLOT })
-  const [yearFilter, setYearFilter] = useState(String(getDefaultSchoolYear()))
 
   const assignments = useSqlQuery(
     `SELECT a.*, c.name AS course_name, c.division, c.school_id,
@@ -66,19 +65,24 @@ export default function Assignments({ navigate }) {
      JOIN courses c ON c.id = a.course_id
      JOIN schools sh ON sh.id = c.school_id
      JOIN subjects sub ON sub.id = a.subject_id
-     ORDER BY a.school_year DESC, sh.name COLLATE NOCASE,
+     WHERE a.school_year = ?
+     ORDER BY sh.name COLLATE NOCASE,
               c.name COLLATE NOCASE, sub.name COLLATE NOCASE`,
+    [getDefaultSchoolYear()],
   )
 
   const courses = useSqlQuery(
     `SELECT c.*, sh.name AS school_name
      FROM courses c
      JOIN schools sh ON sh.id = c.school_id
+     WHERE c.school_year = ?
      ORDER BY sh.name COLLATE NOCASE, c.name COLLATE NOCASE`,
+    [getDefaultSchoolYear()],
   )
 
   const subjects = useSqlQuery(
-    'SELECT * FROM subjects ORDER BY name COLLATE NOCASE',
+    'SELECT * FROM subjects WHERE school_year = ? ORDER BY name COLLATE NOCASE',
+    [getDefaultSchoolYear()],
   )
 
   const slots = useSqlQuery(
@@ -98,27 +102,16 @@ export default function Assignments({ navigate }) {
     return map
   }, [slots])
 
-  const availableYears = useMemo(() => {
-    const years = new Set(assignments.map((item) => String(item.school_year)))
-    years.add(String(getDefaultSchoolYear()))
-    return [...years].sort((a, b) => Number(b) - Number(a))
-  }, [assignments])
-
-  const filteredAssignments = useMemo(() => {
-    if (yearFilter === 'all') return assignments
-    return assignments.filter((item) => String(item.school_year) === String(yearFilter))
-  }, [assignments, yearFilter])
-
   const grouped = useMemo(() => {
     const groups = new Map()
-    for (const assignment of filteredAssignments) {
+    for (const assignment of assignments) {
       if (!groups.has(assignment.school_name)) {
         groups.set(assignment.school_name, [])
       }
       groups.get(assignment.school_name).push(assignment)
     }
     return [...groups.entries()]
-  }, [filteredAssignments])
+  }, [assignments])
 
   const scheduleSlots = scheduleAssignment
     ? slotsByAssignment.get(scheduleAssignment.id) ?? []
@@ -364,26 +357,7 @@ export default function Assignments({ navigate }) {
         </Card>
       ) : null}
 
-      <Card className="filter-card">
-        <div className="filter-row">
-          <Field label="Año lectivo">
-            <select
-              className="input"
-              value={yearFilter}
-              onChange={(event) => setYearFilter(event.target.value)}
-            >
-              <option value="all">Todos los años</option>
-              {availableYears.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
-      </Card>
-
-      {filteredAssignments.length === 0 ? (
+      {assignments.length === 0 ? (
         <Card>
           <EmptyState
             icon="graduation"

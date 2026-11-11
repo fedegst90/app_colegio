@@ -47,7 +47,9 @@ export default function Students({ navigate, params = {} }) {
     `SELECT c.*, sh.name AS school_name
      FROM courses c
      JOIN schools sh ON sh.id = c.school_id
+     WHERE c.school_year = ?
      ORDER BY sh.name COLLATE NOCASE, c.name COLLATE NOCASE`,
+    [getDefaultSchoolYear()],
   )
 
   const groupedCourses = useMemo(() => {

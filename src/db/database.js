@@ -82,6 +82,20 @@ function migratePlanningSchema() {
   addColumn('plans', 'activity_id', 'INTEGER REFERENCES activities(id) ON DELETE SET NULL')
 }
 
+function migrateSchoolYearColumns() {
+  addColumn('schools', 'school_year', 'INTEGER NOT NULL DEFAULT 2026')
+  addColumn('subjects', 'school_year', 'INTEGER NOT NULL DEFAULT 2026')
+  addColumn('courses', 'school_year', 'INTEGER NOT NULL DEFAULT 2026')
+  // Vincular datos existentes al año 2026 si quedaron en 0/null.
+  try {
+    rawRun('UPDATE schools SET school_year = 2026 WHERE school_year IS NULL OR school_year = 0')
+    rawRun('UPDATE subjects SET school_year = 2026 WHERE school_year IS NULL OR school_year = 0')
+    rawRun('UPDATE courses SET school_year = 2026 WHERE school_year IS NULL OR school_year = 0')
+  } catch (error) {
+    console.error('No se pudo vincular datos al año 2026', error)
+  }
+}
+
 function migrateTopicsToAssignments() {
   if (!hasColumn('topics', 'subject_id') || hasColumn('topics', 'assignment_id')) {
     return
@@ -164,6 +178,7 @@ function upgradeSchema() {
 
   migrateTopicsToAssignments()
   migratePlanningSchema()
+  migrateSchoolYearColumns()
   applySchema()
   rawRun(`PRAGMA user_version = ${SCHEMA_VERSION}`)
   return true

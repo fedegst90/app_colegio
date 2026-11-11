@@ -53,7 +53,6 @@ export default function Grades({ navigate, params = {} }) {
   const [groupCount, setGroupCount] = useState('4')
   const [groupMode, setGroupMode] = useState('balanced')
   const [randomSeed, setRandomSeed] = useState(0)
-  const [yearFilter, setYearFilter] = useState(String(getDefaultSchoolYear()))
 
   const periodTableRef = useRef(null)
   const annualTableRef = useRef(null)
@@ -66,28 +65,19 @@ export default function Grades({ navigate, params = {} }) {
      JOIN courses c ON c.id = a.course_id
      JOIN schools sh ON sh.id = c.school_id
      JOIN subjects sub ON sub.id = a.subject_id
-     ORDER BY a.school_year DESC, sh.name COLLATE NOCASE,
+     WHERE a.school_year = ?
+     ORDER BY sh.name COLLATE NOCASE,
               c.name COLLATE NOCASE, sub.name COLLATE NOCASE`,
+    [getDefaultSchoolYear()],
   )
 
-  const availableYears = useMemo(() => {
-    const years = new Set(assignments.map((item) => String(item.school_year)))
-    years.add(String(getDefaultSchoolYear()))
-    return [...years].sort((a, b) => Number(b) - Number(a))
-  }, [assignments])
-
-  const filteredAssignments = useMemo(() => {
-    if (yearFilter === 'all') return assignments
-    return assignments.filter((item) => String(item.school_year) === String(yearFilter))
-  }, [assignments, yearFilter])
-
   const assignment =
-    filteredAssignments.find((item) => String(item.id) === String(assignmentId)) ??
-    filteredAssignments[0] ?? assignments[0]
+    assignments.find((item) => String(item.id) === String(assignmentId)) ??
+    assignments[0]
 
   useEffect(() => {
-    if (filteredAssignments.length === 0) return
-    const valid = filteredAssignments.some(
+    if (assignments.length === 0) return
+    const valid = assignments.some(
       (item) => String(item.id) === String(assignmentId),
     )
     if (!valid && assignment) {
@@ -596,27 +586,13 @@ export default function Grades({ navigate, params = {} }) {
 
       <Card className="filter-card">
         <div className="filter-row">
-          <Field label="Año lectivo">
-            <select
-              className="input"
-              value={yearFilter}
-              onChange={(event) => setYearFilter(event.target.value)}
-            >
-              <option value="all">Todos los años</option>
-              {availableYears.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </Field>
           <Field label="Cátedra" className="grow">
             <select
               className="input"
               value={assignment.id}
               onChange={(event) => changeAssignment(event.target.value)}
             >
-              {filteredAssignments.map((item) => (
+              {assignments.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.school_name} · {item.course_name} · {item.subject_name} ·{' '}
                   {item.school_year}
