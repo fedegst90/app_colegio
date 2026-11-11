@@ -1,5 +1,5 @@
 import { all, get, getSetting } from '../db/database'
-import { todayISO } from './format'
+import { todayISO, comparePersonNames } from './format'
 
 export function weightedAverage(items) {
   const valid = items.filter(
