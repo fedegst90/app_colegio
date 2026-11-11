@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useData } from '../context/data-context'
+import html2pdf from 'html2pdf.js'
 import { useSqlQuery } from '../hooks/useSqlQuery'
 import { useToast } from '../context/toast-context'
 import { Icon } from '../components/Icon'
@@ -51,6 +52,9 @@ export default function Grades({ navigate, params = {} }) {
   const [groupCount, setGroupCount] = useState('4')
   const [groupMode, setGroupMode] = useState('balanced')
   const [randomSeed, setRandomSeed] = useState(0)
+
+  const periodTableRef = useRef(null)
+  const annualTableRef = useRef(null)
 
   const assignments = useSqlQuery(
     `SELECT a.*, c.name AS course_name, c.division, c.id AS course_id,
@@ -417,6 +421,50 @@ export default function Grades({ navigate, params = {} }) {
     toast('Concepto eliminado.')
   }
 
+  async function exportPeriodPdf() {
+    const element = periodTableRef.current
+    if (!element) return
+    const previousDisplay = element.style.display
+    element.style.display = 'block'
+    const filename = `reporte-${safeName(period?.name ?? 'periodo')}.pdf`
+    try {
+      await html2pdf()
+        .set({
+          margin: [8, 8],
+          filename,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+        })
+        .from(element)
+        .save()
+    } finally {
+      element.style.display = previousDisplay
+    }
+  }
+
+  async function exportAnnualPdf() {
+    const element = annualTableRef.current
+    if (!element) return
+    const previousDisplay = element.style.display
+    element.style.display = 'block'
+    const filename = `reporte-resumen-anual.pdf`
+    try {
+      await html2pdf()
+        .set({
+          margin: [8, 8],
+          filename,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+        })
+        .from(element)
+        .save()
+    } finally {
+      element.style.display = previousDisplay
+    }
+  }
+
   function exportCsv() {
     if (!assignment) return
     const baseName = safeName(
@@ -610,13 +658,22 @@ export default function Grades({ navigate, params = {} }) {
                   : 'Seleccioná un período'
               }`}
               actions={
-                <button
-                  type="button"
-                  className="btn primary small"
-                  onClick={openNewActivity}
-                >
-                  <Icon name="plus" size={16} /> Actividad
-                </button>
+                <div className="inline-actions">
+                  <button
+                    type="button"
+                    className="btn ghost small"
+                    onClick={exportPeriodPdf}
+                  >
+                    <Icon name="download" size={16} /> Exportar PDF
+                  </button>
+                  <button
+                    type="button"
+                    className="btn primary small"
+                    onClick={openNewActivity}
+                  >
+                    <Icon name="plus" size={16} /> Actividad
+                  </button>
+                </div>
               }
             />
 
@@ -642,7 +699,7 @@ export default function Grades({ navigate, params = {} }) {
               />
             ) : (
               <>
-                <div className="table-wrap grades-table-wrap grades-table-desktop">
+                <div ref={periodTableRef} className="table-wrap grades-table-wrap grades-table-desktop">
                 <table className="data-table grades-table">
                   <thead>
                     <tr>
@@ -953,14 +1010,23 @@ export default function Grades({ navigate, params = {} }) {
             title="Resumen anual"
             subtitle="La nota final del año es el promedio de las notas finales de cada período."
             actions={
-              <Badge tone="info">
-                Aprueba con {Number(assignment.passing_grade)}
-              </Badge>
+              <div className="inline-actions">
+                <Badge tone="info">
+                  Aprueba con {Number(assignment.passing_grade)}
+                </Badge>
+                <button
+                  type="button"
+                  className="btn ghost small"
+                  onClick={exportAnnualPdf}
+                >
+                  <Icon name="download" size={16} /> Exportar PDF
+                </button>
+              </div>
             }
           />
           {yearResults && yearResults.rows.length > 0 ? (
             <>
-              <div className="table-wrap annual-table-desktop">
+              <div ref={annualTableRef} className="table-wrap annual-table-desktop">
                 <table className="data-table annual-table">
                 <thead>
                   <tr>
