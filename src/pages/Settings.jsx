@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import {
   all,
   exportDatabaseBytes,
+  get,
   getSetting,
   importDatabaseBytes,
   persistNow,
