@@ -332,6 +332,34 @@ export default function Grades({ navigate, params = {} }) {
     toast('Actividad eliminada.')
   }
 
+  function savePeriodFinal(studentId, value) {
+    const evaluation = evaluationByStudent.get(studentId)
+    const text = String(value).trim()
+    const grade = text === '' ? null : Number(text.replace(',', '.'))
+    if (grade !== null && (!Number.isFinite(grade) || grade < 1 || grade > 10)) {
+      toast('La nota debe estar entre 1 y 10.', 'error')
+      return
+    }
+    const concept = evaluation?.concept ?? ''
+    const weight = evaluation?.weight ?? 1
+    if (grade === null && !concept) {
+      mutate('DELETE FROM evaluations WHERE period_id = ? AND student_id = ?', [
+        period.id,
+        studentId,
+      ])
+    } else {
+      mutate(
+        `INSERT INTO evaluations (period_id, student_id, concept, grade, weight)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT(period_id, student_id)
+         DO UPDATE SET concept = excluded.concept,
+                       grade = excluded.grade,
+                       weight = excluded.weight`,
+        [period.id, studentId, concept, grade, weight],
+      )
+    }
+  }
+
   function openConcept(student) {
     const evaluation = evaluationByStudent.get(student.id)
     setConceptForm({
@@ -720,14 +748,26 @@ export default function Grades({ navigate, params = {} }) {
                             </button>
                           </td>
                           <td className="final-col">
-                            <span
-                              className={`grade-pill tone-${gradeTone(
-                                score,
-                                Number(assignment.passing_grade),
-                              )}`}
-                            >
-                              {formatGrade(score)}
-                            </span>
+                            {activities.length === 0 ? (
+                              <GradeInput
+                                key={`final-${student.id}-${evaluationByStudent.get(student.id)?.grade ?? ''}`}
+                                value={evaluationByStudent.get(student.id)?.grade ?? ''}
+                                passing={Number(assignment.passing_grade)}
+                                onSave={(value) =>
+                                  savePeriodFinal(student.id, value)
+                                }
+                                label={`${studentFullName(student)} · Nota final del período`}
+                              />
+                            ) : (
+                              <span
+                                className={`grade-pill tone-${gradeTone(
+                                  score,
+                                  Number(assignment.passing_grade),
+                                )}`}
+                              >
+                                {formatGrade(score)}
+                              </span>
+                            )}
                           </td>
                         </tr>
                       )
@@ -847,6 +887,24 @@ export default function Grades({ navigate, params = {} }) {
                           ))}
                         </div>
 
+                        {activities.length === 0 ? (
+                          <div className="grade-activity-row">
+                            <div className="grade-activity-info">
+                              <strong>Nota final del período</strong>
+                              <span>Sin actividades</span>
+                            </div>
+                            <div className="grade-activity-input">
+                              <GradeInput
+                                key={`mobile-final-${student.id}-${evaluation?.grade ?? ''}`}
+                                value={evaluation?.grade ?? ''}
+                                passing={Number(assignment.passing_grade)}
+                                onSave={(value) => savePeriodFinal(student.id, value)}
+                                label={`${studentFullName(student)} · Nota final del período`}
+                              />
+                            </div>
+                          </div>
+                        ) : null}
+
                         <div className="grade-student-footer">
                           <button
                             type="button"
@@ -901,8 +959,9 @@ export default function Grades({ navigate, params = {} }) {
             }
           />
           {yearResults && yearResults.rows.length > 0 ? (
-            <div className="table-wrap">
-              <table className="data-table annual-table">
+            <>
+              <div className="table-wrap annual-table-desktop">
+                <table className="data-table annual-table">
                 <thead>
                   <tr>
                     <th className="sticky-col">Alumno</th>
@@ -959,7 +1018,55 @@ export default function Grades({ navigate, params = {} }) {
                   ))}
                 </tbody>
               </table>
-            </div>
+              </div>
+
+              <div className="annual-mobile-cards">
+                {yearResults.rows.map((row) => (
+                  <article key={row.student.id} className="annual-student-card">
+                    <header className="annual-student-card-header">
+                      <span className="avatar small">
+                        {initials(row.student.first_name, row.student.last_name)}
+                      </span>
+                      <strong className="grade-student-name">
+                        {studentFullName(row.student)}
+                      </strong>
+                      <span
+                        className={`grade-pill large tone-${gradeTone(
+                          row.final,
+                          Number(assignment.passing_grade),
+                        )}`}
+                      >
+                        {formatGrade(row.final)}
+                      </span>
+                    </header>
+                    <div className="annual-periods-list">
+                      {yearResults.periods.map((periodItem, index) => (
+                        <div key={periodItem.id} className="annual-period-row">
+                          <span>{periodItem.name}</span>
+                          <span
+                            className={`grade-pill tone-${gradeTone(
+                              row.periodFinals[index],
+                              Number(assignment.passing_grade),
+                            )}`}
+                          >
+                            {formatGrade(row.periodFinals[index])}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <footer className="annual-student-card-footer">
+                      {row.final === null ? (
+                        <Badge tone="neutral">Sin datos</Badge>
+                      ) : row.approved ? (
+                        <Badge tone="success">Aprobado</Badge>
+                      ) : (
+                        <Badge tone="danger">Desaprobado</Badge>
+                      )}
+                    </footer>
+                  </article>
+                ))}
+              </div>
+            </>
           ) : (
             <EmptyState
               icon="chart"

@@ -3791,3 +3791,57 @@ textarea.input {
     padding: 12px;
   }
 }
+
+/* Annual summary mobile cards */
+.annual-mobile-cards {
+  display: none;
+}
+
+.annual-student-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.annual-student-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.annual-periods-list {
+  display: grid;
+  gap: 6px;
+}
+
+.annual-period-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-top: 1px solid var(--border-soft);
+  font-size: 13px;
+}
+
+.annual-period-row:first-child {
+  border-top: 0;
+}
+
+.annual-student-card-footer {
+  padding-top: 6px;
+  border-top: 1px solid var(--border-soft);
+}
+
+@media (max-width: 900px) {
+  .annual-table-desktop {
+    display: none;
+  }
+
+  .annual-mobile-cards {
+    display: grid;
+    gap: 12px;
+  }
+}
