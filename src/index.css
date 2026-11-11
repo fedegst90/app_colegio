@@ -3681,3 +3681,113 @@ textarea.input {
     width: 64px;
   }
 }
+
+/* Grades mobile cards */
+.grades-mobile-cards {
+  display: none;
+}
+
+.grade-student-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.grade-student-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.grade-student-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.grade-activities-list {
+  display: grid;
+  gap: 10px;
+}
+
+.grade-activity-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid var(--border-soft);
+}
+
+.grade-activity-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.grade-activity-info {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.grade-activity-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.grade-activity-title-row strong {
+  flex: 1;
+  min-width: 0;
+}
+
+.grade-activity-actions {
+  display: flex;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.grade-activity-info strong {
+  font-size: 13px;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.grade-activity-info span {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.grade-activity-input {
+  min-width: 74px;
+}
+
+.grade-student-footer {
+  padding-top: 4px;
+  border-top: 1px solid var(--border-soft);
+}
+
+@media (max-width: 900px) {
+  .grades-table-desktop {
+    display: none;
+  }
+
+  .grades-mobile-cards {
+    display: grid;
+    gap: 12px;
+  }
+
+  .grade-student-card {
+    padding: 12px;
+  }
+}

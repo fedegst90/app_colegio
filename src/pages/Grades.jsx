@@ -613,7 +613,8 @@ export default function Grades({ navigate, params = {} }) {
                 }
               />
             ) : (
-              <div className="table-wrap grades-table-wrap">
+              <>
+                <div className="table-wrap grades-table-wrap grades-table-desktop">
                 <table className="data-table grades-table">
                   <thead>
                     <tr>
@@ -770,6 +771,112 @@ export default function Grades({ navigate, params = {} }) {
                   </tfoot>
                 </table>
               </div>
+
+                <div className="grades-mobile-cards">
+                  {students.map((student) => {
+                    const evaluation = evaluationByStudent.get(student.id)
+                    const score = scores.get(student.id)
+                    return (
+                      <article key={student.id} className="grade-student-card">
+                        <header className="grade-student-card-header">
+                          <span className="avatar small">
+                            {initials(student.first_name, student.last_name)}
+                          </span>
+                          <strong className="grade-student-name">
+                            {studentFullName(student)}
+                          </strong>
+                          <span
+                            className={`grade-pill tone-${gradeTone(
+                              score,
+                              Number(assignment.passing_grade),
+                            )}`}
+                          >
+                            {formatGrade(score)}
+                          </span>
+                        </header>
+
+                        <div className="grade-activities-list">
+                          {activities.map((activity) => (
+                            <div key={activity.id} className="grade-activity-row">
+                              <div className="grade-activity-info">
+                                <div className="grade-activity-title-row">
+                                  <strong>{activity.name}</strong>
+                                  <div className="grade-activity-actions">
+                                    <button
+                                      type="button"
+                                      className="icon-button tiny"
+                                      title="Editar actividad"
+                                      onClick={() =>
+                                        setActivityForm({
+                                          ...activity,
+                                          weight: String(activity.weight),
+                                        })
+                                      }
+                                    >
+                                      <Icon name="edit" size={13} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="icon-button tiny danger"
+                                      title="Eliminar actividad"
+                                      onClick={() => deleteActivity(activity)}
+                                    >
+                                      <Icon name="trash" size={13} />
+                                    </button>
+                                  </div>
+                                </div>
+                                <span>
+                                  {activity.date ? formatDate(activity.date) : 'Sin fecha'}
+                                  {Number(activity.weight) !== 1
+                                    ? ` · peso ${activity.weight}`
+                                    : ''}
+                                </span>
+                              </div>
+                              <div className="grade-activity-input">
+                                <GradeInput
+                                  key={`${activity.id}-${student.id}-${gradeMap.get(`${activity.id}:${student.id}`) ?? ''}`}
+                                  value={gradeMap.get(`${activity.id}:${student.id}`) ?? ''}
+                                  passing={Number(assignment.passing_grade)}
+                                  onSave={(value) =>
+                                    saveGrade(activity.id, student.id, value)
+                                  }
+                                  label={`${studentFullName(student)} · ${activity.name}`}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="grade-student-footer">
+                          <button
+                            type="button"
+                            className={`concept-button ${evaluation ? 'has-concept' : ''}`}
+                            onClick={() => openConcept(student)}
+                          >
+                            <Icon name="file" size={15} />
+                            <span>
+                              {evaluation?.concept
+                                ? truncate(evaluation.concept, 40)
+                                : 'Agregar concepto'}
+                            </span>
+                            {evaluation?.grade !== null &&
+                            evaluation?.grade !== undefined ? (
+                              <b
+                                className={`tone-${gradeTone(
+                                  evaluation.grade,
+                                  Number(assignment.passing_grade),
+                                )}`}
+                              >
+                                {formatGrade(evaluation.grade)}
+                              </b>
+                            ) : null}
+                          </button>
+                        </div>
+                      </article>
+                    )
+                  })}
+                </div>
+              </>
             )}
 
             {activities.length === 0 && students.length > 0 ? (
