@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { run } from '../db/database'
 import { useData } from '../context/data-context'
+import { getDefaultSchoolYear } from '../lib/stats'
 import { useSqlQuery } from '../hooks/useSqlQuery'
 import { useToast } from '../context/toast-context'
 import { Icon } from '../components/Icon'
@@ -29,6 +30,7 @@ export default function Program({ navigate, params = {} }) {
     return localStorage.getItem('selectedAssignmentId') || ''
   })
   const [topicForm, setTopicForm] = useState(null)
+  const [yearFilter, setYearFilter] = useState(String(getDefaultSchoolYear()))
 
   const assignments = useSqlQuery(
     `SELECT a.*, c.name AS course_name, c.division,
@@ -43,13 +45,24 @@ export default function Program({ navigate, params = {} }) {
               c.name COLLATE NOCASE, sub.name COLLATE NOCASE`,
   )
 
+  const availableYears = useMemo(() => {
+    const years = new Set(assignments.map((item) => String(item.school_year)))
+    years.add(String(getDefaultSchoolYear()))
+    return [...years].sort((a, b) => Number(b) - Number(a))
+  }, [assignments])
+
+  const filteredAssignments = useMemo(() => {
+    if (yearFilter === 'all') return assignments
+    return assignments.filter((item) => String(item.school_year) === String(yearFilter))
+  }, [assignments, yearFilter])
+
   const assignment =
-    assignments.find((item) => String(item.id) === String(assignmentId)) ??
-    assignments[0]
+    filteredAssignments.find((item) => String(item.id) === String(assignmentId)) ??
+    filteredAssignments[0] ?? assignments[0]
 
   useEffect(() => {
-    if (assignments.length === 0) return
-    const valid = assignments.some(
+    if (filteredAssignments.length === 0) return
+    const valid = filteredAssignments.some(
       (item) => String(item.id) === String(assignmentId),
     )
     if (!valid && assignment) {
@@ -193,6 +206,20 @@ export default function Program({ navigate, params = {} }) {
 
       <Card className="filter-card">
         <div className="filter-row">
+          <Field label="Año lectivo">
+            <select
+              className="input"
+              value={yearFilter}
+              onChange={(event) => setYearFilter(event.target.value)}
+            >
+              <option value="all">Todos los años</option>
+              {availableYears.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </Field>
           <Field label="Cátedra" className="grow">
             <select
               className="input"
@@ -202,7 +229,7 @@ export default function Program({ navigate, params = {} }) {
                 localStorage.setItem('selectedAssignmentId', event.target.value)
               }}
             >
-              {assignments.map((item) => (
+              {filteredAssignments.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.school_name} · {item.course_name} · {item.subject_name} ·{' '}
                   {item.school_year}
