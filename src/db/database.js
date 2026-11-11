@@ -82,6 +82,35 @@ function migratePlanningSchema() {
   addColumn('plans', 'activity_id', 'INTEGER REFERENCES activities(id) ON DELETE SET NULL')
 }
 
+function migrateSchoolYearsTable() {
+  rawRun(`CREATE TABLE IF NOT EXISTS school_years (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    year INTEGER NOT NULL UNIQUE,
+    description TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`)
+  // Sembrar años existentes.
+  try {
+    const years = rawAll(`SELECT DISTINCT school_year AS y FROM schools
+      UNION SELECT DISTINCT school_year FROM subjects
+      UNION SELECT DISTINCT school_year FROM courses
+      UNION SELECT DISTINCT school_year FROM assignments
+      UNION SELECT DISTINCT school_year FROM students`)
+    for (const row of years) {
+      const y = Number(row.y)
+      if (!y) continue
+      rawRun('INSERT OR IGNORE INTO school_years (year) VALUES (?)', [y])
+    }
+    // Asegurar el año por defecto.
+    const defaultYear = Number(getSetting('default_school_year', String(new Date().getFullYear())))
+    if (defaultYear) {
+      rawRun('INSERT OR IGNORE INTO school_years (year) VALUES (?)', [defaultYear])
+    }
+  } catch (error) {
+    console.error('No se pudo sembrar school_years', error)
+  }
+}
+
 function migrateSchoolYearColumns() {
   addColumn('schools', 'school_year', 'INTEGER NOT NULL DEFAULT 2026')
   addColumn('subjects', 'school_year', 'INTEGER NOT NULL DEFAULT 2026')
@@ -179,6 +208,7 @@ function upgradeSchema() {
   migrateTopicsToAssignments()
   migratePlanningSchema()
   migrateSchoolYearColumns()
+  migrateSchoolYearsTable()
   applySchema()
   rawRun(`PRAGMA user_version = ${SCHEMA_VERSION}`)
   return true

@@ -1,11 +1,11 @@
 import { useMemo, useRef, useState } from 'react'
 import {
+  all,
   exportDatabaseBytes,
   getSetting,
   importDatabaseBytes,
   persistNow,
   resetDatabase,
-  all,
   run,
   setSetting,
 } from '../db/database'
@@ -56,6 +56,7 @@ export default function Settings() {
     getSetting('default_school_year', String(new Date().getFullYear())),
   )
   const [newSchoolYear, setNewSchoolYear] = useState(String(new Date().getFullYear() + 1))
+  const [deleteYearTarget, setDeleteYearTarget] = useState(null)
   const [sourceSchoolYear, setSourceSchoolYear] = useState('')
   const [teacherName, setTeacherName] = useState(() =>
     getSetting('teacher_name', ''),
@@ -108,7 +109,12 @@ export default function Settings() {
   )
 
   const schoolYears = useSqlQuery(
-    `SELECT DISTINCT school_year FROM assignments ORDER BY school_year DESC`,
+    `SELECT sy.*,
+      (SELECT COUNT(*) FROM schools sc WHERE sc.school_year = sy.year) AS school_count,
+      (SELECT COUNT(*) FROM subjects su WHERE su.school_year = sy.year) AS subject_count,
+      (SELECT COUNT(*) FROM courses c WHERE c.school_year = sy.year) AS course_count
+     FROM school_years sy
+     ORDER BY sy.year DESC`,
   )
 
   const calendarExceptions = useSqlQuery(
@@ -400,6 +406,7 @@ export default function Settings() {
     if (!confirmed) return
 
     mutateMany(() => {
+      run('INSERT OR IGNORE INTO school_years (year, description) VALUES (?, ?)', [target, ''])
       if (source) {
         const assignments = allAssignmentsForYear(source)
         for (const assignment of assignments) {
@@ -515,6 +522,50 @@ export default function Settings() {
         ? `Año ${target} creado copiando las cátedras del ${source}.`
         : `Año ${target} creado.`,
     )
+  }
+
+  function deleteSchoolYear(year) {
+    setDeleteYearTarget(year)
+  }
+
+  function confirmDeleteSchoolYear() {
+    const year = deleteYearTarget
+    if (!year) return
+    // confirmación adicional
+    if (!window.confirm(`¿Confirmás eliminar el año ${year} y todos sus datos?`)) return
+    mutateMany(() => {
+      // Borrar cátedras del año (cascade a períodos, actividades, notas, temas, planes, horarios).
+      const assignments = all(
+        'SELECT id FROM assignments WHERE school_year = ?',
+        [year],
+      )
+      for (const a of assignments) {
+        run('DELETE FROM assignments WHERE id = ?', [a.id])
+      }
+      // Borrar alumnos del año.
+      run('DELETE FROM students WHERE school_year = ?', [year])
+      // Borrar cursos, materias, colegios del año.
+      run('DELETE FROM courses WHERE school_year = ?', [year])
+      run('DELETE FROM subjects WHERE school_year = ?', [year])
+      run('DELETE FROM schools WHERE school_year = ?', [year])
+      // Calendario.
+      run('DELETE FROM calendar_exceptions WHERE school_year = ?', [year])
+      // Quitar el año.
+      run('DELETE FROM school_years WHERE year = ?', [year])
+    })
+
+    // Si se borró el año activo, cambiar a otro.
+    const active = Number(getSetting('default_school_year', String(new Date().getFullYear())))
+    if (active === Number(year)) {
+      const remaining = all('SELECT year FROM school_years ORDER BY year DESC')
+      const next = remaining.length ? remaining[0].year : new Date().getFullYear()
+      setSetting('default_school_year', String(next))
+      setDefaultYear(String(next))
+      setCalendarYear(String(next))
+    }
+    refresh()
+    toast(`Año ${year} eliminado.`)
+    setDeleteYearTarget(null)
   }
 
   function saveTeacher(event) {
@@ -1053,6 +1104,57 @@ export default function Settings() {
             </form>
 
             <CardHeader
+              title="Años creados"
+              subtitle="Listado de años con su contenido. Podés eliminar un año completo."
+            />
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>Año</th>
+                    <th>Colegios</th>
+                    <th>Materias</th>
+                    <th>Cursos</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {schoolYears.map((row) => (
+                    <tr key={row.year}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={String(defaultYear) === String(row.year)}
+                          onChange={() => {
+                            setDefaultYear(String(row.year))
+                            setSetting('default_school_year', String(row.year))
+                            setCalendarYear(String(row.year))
+                            refresh()
+                            toast(`Año activo: ${row.year}`)
+                          }}
+                        />
+                      </td>
+                      <td>{row.year}</td>
+                      <td>{row.school_count}</td>
+                      <td>{row.subject_count}</td>
+                      <td>{row.course_count}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="btn ghost small danger"
+                          onClick={() => deleteSchoolYear(row.year)}
+                        >
+                          Eliminar
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <CardHeader
               title="Crear nuevo año"
               subtitle="Crea un año vacío (sin datos) o copia las cátedras del año anterior. No copia alumnos."
             />
@@ -1075,8 +1177,8 @@ export default function Settings() {
                 >
                   <option value="">Sin copiar</option>
                   {schoolYears.map((row) => (
-                    <option key={row.school_year} value={row.school_year}>
-                      {row.school_year}
+                    <option key={row.year} value={row.year}>
+                      {row.year}
                     </option>
                   ))}
                 </select>
@@ -1387,6 +1489,48 @@ export default function Settings() {
         ) : null}
       </Modal>
 
+
+      <Modal
+        open={Boolean(deleteYearTarget)}
+        title={`Eliminar año ${deleteYearTarget}`}
+        description="Se eliminarán todos los datos de ese año (colegios, materias, cursos, cátedras, alumnos, notas, planificaciones). Esta acción no se puede deshacer."
+        onClose={() => setDeleteYearTarget(null)}
+        footer={
+          <>
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={() => setDeleteYearTarget(null)}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="btn danger"
+              onClick={confirmDeleteSchoolYear}
+            >
+              Eliminar todo
+            </button>
+          </>
+        }
+      >
+        <p>
+          Escribí <strong>{deleteYearTarget}</strong> para confirmar.
+        </p>
+        <Field label="Confirmación">
+          <input
+            className="input"
+            type="text"
+            onChange={(event) => {
+              if (event.target.value === String(deleteYearTarget)) {
+                event.target.dataset.ok = '1'
+              } else {
+                delete event.target.dataset.ok
+              }
+            }}
+          />
+        </Field>
+      </Modal>
     </div>
   )
 }

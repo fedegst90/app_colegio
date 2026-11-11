@@ -211,17 +211,22 @@ export function getAssignmentStats(assignmentId) {
   }
 }
 
-export function getOverallStats() {
+export function getOverallStats(schoolYear = null) {
+  const y = schoolYear ? Number(schoolYear) : null
+  const cond = (table, alias = '') => {
+    const prefix = alias ? `${alias}.` : ''
+    return y ? `WHERE ${prefix}school_year = ${y}` : ''
+  }
   return (
     get(
       `SELECT
-        (SELECT COUNT(*) FROM schools) AS schools,
-        (SELECT COUNT(*) FROM subjects) AS subjects,
-        (SELECT COUNT(*) FROM courses) AS courses,
-        (SELECT COUNT(*) FROM students WHERE active = 1) AS students,
-        (SELECT COUNT(*) FROM assignments) AS assignments,
-        (SELECT COUNT(*) FROM topics) AS topics,
-        (SELECT COUNT(*) FROM plans) AS plans`,
+        (SELECT COUNT(*) FROM schools ${y ? 'WHERE school_year = ' + y : ''}) AS schools,
+        (SELECT COUNT(*) FROM subjects ${y ? 'WHERE school_year = ' + y : ''}) AS subjects,
+        (SELECT COUNT(*) FROM courses ${y ? 'WHERE school_year = ' + y : ''}) AS courses,
+        (SELECT COUNT(*) FROM students WHERE active = 1 ${y ? 'AND school_year = ' + y : ''}) AS students,
+        (SELECT COUNT(*) FROM assignments ${y ? 'WHERE school_year = ' + y : ''}) AS assignments,
+        (SELECT COUNT(*) FROM topics ${y ? 'WHERE assignment_id IN (SELECT id FROM assignments WHERE school_year = ' + y + ')' : ''}) AS topics,
+        (SELECT COUNT(*) FROM plans ${y ? 'WHERE assignment_id IN (SELECT id FROM assignments WHERE school_year = ' + y + ')' : ''}) AS plans`,
     ) ?? {
       schools: 0,
       subjects: 0,

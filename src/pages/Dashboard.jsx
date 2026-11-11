@@ -43,10 +43,11 @@ export default function Dashboard({ navigate }) {
     return localStorage.getItem('selectedAssignmentId') || ''
   })
 
+  const activeYear = getDefaultSchoolYear()
   const overview = useMemo(() => {
     void version
-    return getOverallStats()
-  }, [version])
+    return getOverallStats(activeYear)
+  }, [version, activeYear])
 
   const assignments = useSqlQuery(
     `SELECT a.*, c.name AS course_name, c.division,
@@ -56,8 +57,10 @@ export default function Dashboard({ navigate }) {
      JOIN courses c ON c.id = a.course_id
      JOIN schools sh ON sh.id = c.school_id
      JOIN subjects sub ON sub.id = a.subject_id
-     ORDER BY a.school_year DESC, sh.name COLLATE NOCASE,
+     WHERE a.school_year = ?
+     ORDER BY sh.name COLLATE NOCASE,
               c.name COLLATE NOCASE, sub.name COLLATE NOCASE`,
+    [activeYear],
   )
 
   const assignment =
