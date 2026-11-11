@@ -157,3 +157,23 @@ export function buildCsv(rows) {
 export function pluralize(count, singular, plural = `${singular}s`) {
   return `${count} ${count === 1 ? singular : plural}`
 }
+
+export function normalizeSortText(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+}
+
+export function comparePersonNames(a, b) {
+  const last = normalizeSortText(a?.last_name).localeCompare(
+    normalizeSortText(b?.last_name),
+    'es',
+  )
+  if (last !== 0) return last
+  return normalizeSortText(a?.first_name).localeCompare(
+    normalizeSortText(b?.first_name),
+    'es',
+  )
+}

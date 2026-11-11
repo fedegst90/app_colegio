@@ -17,6 +17,7 @@ import {
   initials,
   parseStudentLine,
   studentFullName,
+  comparePersonNames,
 } from '../lib/format'
 import { getDefaultSchoolYear } from '../lib/stats'
 
@@ -77,8 +78,13 @@ export default function Students({ navigate, params = {} }) {
   const students = useSqlQuery(
     `SELECT * FROM students
      WHERE course_id = ? AND school_year = ? AND active = 1
-     ORDER BY last_name COLLATE NOCASE, first_name COLLATE NOCASE`,
+     ORDER BY last_name, first_name`,
     [course?.id ?? 0, Number(schoolYear)],
+  )
+
+  const sortedStudents = useMemo(
+    () => [...students].sort(comparePersonNames),
+    [students],
   )
 
   const assignments = useSqlQuery(
@@ -92,13 +98,13 @@ export default function Students({ navigate, params = {} }) {
 
   const filteredStudents = useMemo(() => {
     const term = search.trim().toLowerCase()
-    if (!term) return students
-    return students.filter((student) =>
+    if (!term) return sortedStudents
+    return sortedStudents.filter((student) =>
       `${student.last_name} ${student.first_name} ${student.email} ${student.phone}`
         .toLowerCase()
         .includes(term),
     )
-  }, [students, search])
+  }, [sortedStudents, search])
 
   function openNewStudent() {
     if (!course) {
@@ -184,7 +190,7 @@ export default function Students({ navigate, params = {} }) {
     }
 
     const existing = new Set(
-      students.map(
+      sortedStudents.map(
         (student) =>
           `${student.last_name.toLowerCase()}|${student.first_name.toLowerCase()}`,
       ),
@@ -339,14 +345,14 @@ export default function Students({ navigate, params = {} }) {
       <Card>
         <CardHeader
           title={`Alumnos de ${course.name}${course.division ? ` · ${course.division}` : ''}`}
-          subtitle={`${studentFullNameCount(students.length)} · ${course.school_name} · Año ${schoolYear}`}
+          subtitle={`${studentFullNameCount(sortedStudents.length)} · ${course.school_name} · Año ${schoolYear}`}
           actions={
-            <Badge tone={students.length > 0 ? 'success' : 'neutral'}>
-              {students.length} inscriptos
+            <Badge tone={sortedStudents.length > 0 ? 'success' : 'neutral'}>
+              {sortedStudents.length} inscriptos
             </Badge>
           }
         />
-        {students.length === 0 ? (
+        {sortedStudents.length === 0 ? (
           <EmptyState
             icon="users"
             title="No hay alumnos en este curso y año"

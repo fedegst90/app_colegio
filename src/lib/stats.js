@@ -44,16 +44,16 @@ export function getAssignmentDetail(assignmentId) {
 }
 
 export function getAssignmentStudents(assignmentId) {
-  return all(
+  const rows = all(
     `SELECT st.*
      FROM students st
      JOIN assignments a
        ON a.course_id = st.course_id
       AND a.school_year = st.school_year
-     WHERE a.id = ? AND st.active = 1
-     ORDER BY st.last_name COLLATE NOCASE, st.first_name COLLATE NOCASE`,
+     WHERE a.id = ? AND st.active = 1`,
     [assignmentId],
   )
+  return [...rows].sort(comparePersonNames)
 }
 
 export function getAssignmentPeriods(assignmentId) {
