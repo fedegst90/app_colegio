@@ -408,7 +408,10 @@ export default function Settings() {
     mutateMany(() => {
       run('INSERT OR IGNORE INTO school_years (year, description) VALUES (?, ?)', [target, ''])
       if (source) {
-        const assignments = allAssignmentsForYear(source)
+        const assignments = all(
+          'SELECT * FROM assignments WHERE school_year = ?',
+          [source],
+        )
         for (const assignment of assignments) {
           const duplicate = get(
             `SELECT id FROM assignments
@@ -434,7 +437,10 @@ export default function Settings() {
             ],
           )
 
-          const periods = rawAllPeriods(assignment.id)
+          const periods = all(
+            'SELECT * FROM periods WHERE assignment_id = ?',
+            [assignment.id],
+          )
           const periodIdMap = {}
           for (const period of periods) {
             const newPeriodId = run(
@@ -452,7 +458,10 @@ export default function Settings() {
             periodIdMap[period.id] = newPeriodId
           }
 
-          const topics = rawAllTopics(assignment.id)
+          const topics = all(
+            'SELECT * FROM topics WHERE assignment_id = ?',
+            [assignment.id],
+          )
           const topicIdMap = {}
           for (const topic of topics) {
             const newTopicId = run(
@@ -471,7 +480,10 @@ export default function Settings() {
             topicIdMap[topic.id] = newTopicId
           }
 
-          const slots = rawAllSlots(assignment.id)
+          const slots = all(
+            'SELECT * FROM schedule_slots WHERE assignment_id = ?',
+            [assignment.id],
+          )
           for (const slot of slots) {
             run(
               `INSERT INTO schedule_slots
@@ -487,7 +499,10 @@ export default function Settings() {
             )
           }
 
-          const plans = rawAllPlans(assignment.id)
+          const plans = all(
+            'SELECT * FROM plans WHERE assignment_id = ?',
+            [assignment.id],
+          )
           for (const plan of plans) {
             run(
               `INSERT INTO plans
@@ -1080,29 +1095,6 @@ export default function Settings() {
               title="Año lectivo"
               subtitle="Elegí el año activo para toda la aplicación. Los datos de otros años no se borran."
             />
-            <form className="form-grid" onSubmit={(event) => {
-              event.preventDefault()
-              setSetting('default_school_year', defaultYear)
-              refresh()
-              toast('Año lectivo activo actualizado.')
-            }}>
-              <Field label="Año lectivo activo" hint="Se usa en todas las pestañas.">
-                <input
-                  className="input"
-                  type="number"
-                  min="2000"
-                  max="2100"
-                  value={defaultYear}
-                  onChange={(event) => setDefaultYear(event.target.value)}
-                />
-              </Field>
-              <div className="form-actions full">
-                <button type="submit" className="btn primary small">
-                  Guardar año activo
-                </button>
-              </div>
-            </form>
-
             <CardHeader
               title="Años creados"
               subtitle="Listado de años con su contenido. Podés eliminar un año completo."
