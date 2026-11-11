@@ -181,11 +181,8 @@ function AppShell() {
 }
 
 function AuthenticatedApp() {
-  const { user, loading } = useAuth()
-  if (loading) return <LoadingScreen />
-  if (!user) return <Login />
   return (
-    <DataProvider uid={user.uid}>
+    <DataProvider uid={null}>
       <AppShell />
     </DataProvider>
   )

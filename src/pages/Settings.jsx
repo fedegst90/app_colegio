@@ -110,12 +110,25 @@ export default function Settings() {
   )
 
   const schoolYears = useSqlQuery(
-    `SELECT sy.*,
-      (SELECT COUNT(*) FROM schools sc WHERE sc.school_year = sy.year) AS school_count,
-      (SELECT COUNT(*) FROM subjects su WHERE su.school_year = sy.year) AS subject_count,
-      (SELECT COUNT(*) FROM courses c WHERE c.school_year = sy.year) AS course_count
-     FROM school_years sy
-     ORDER BY sy.year DESC`,
+    `SELECT y.year,
+      (SELECT COUNT(*) FROM schools sc WHERE sc.school_year = y.year) AS school_count,
+      (SELECT COUNT(*) FROM subjects su WHERE su.school_year = y.year) AS subject_count,
+      (SELECT COUNT(*) FROM courses c WHERE c.school_year = y.year) AS course_count
+     FROM (
+       SELECT year FROM school_years
+       UNION
+       SELECT DISTINCT school_year AS year FROM schools
+       UNION
+       SELECT DISTINCT school_year FROM subjects
+       UNION
+       SELECT DISTINCT school_year FROM courses
+       UNION
+       SELECT DISTINCT school_year FROM assignments
+       UNION
+       SELECT DISTINCT school_year FROM students
+     ) y
+     WHERE y.year IS NOT NULL
+     ORDER BY y.year DESC`,
   )
 
   const calendarExceptions = useSqlQuery(
