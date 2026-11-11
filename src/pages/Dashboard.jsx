@@ -27,6 +27,7 @@ import {
 import {
   getAssignmentStats,
   getOverallStats,
+  getDefaultSchoolYear,
   getUpcomingPlans,
   getWeeklySchedule,
 } from '../lib/stats'
