@@ -190,7 +190,7 @@ FIREBASE: `))}restoreState_(){this.tryAuth(),this.tryAppCheck();for(let e of thi
      JOIN assignments a
        ON a.course_id = st.course_id
       AND a.school_year = st.school_year
-     WHERE a.id = ? AND st.active = 1`,[e])].sort(comparePersonNames)}function Dg(e){return bh(`SELECT * FROM periods WHERE assignment_id = ? ORDER BY position, id`,[e])}function Og(e){let t=bh(`SELECT student_id, value, weight FROM (
+     WHERE a.id = ? AND st.active = 1`,[e])].sort(yg)}function Dg(e){return bh(`SELECT * FROM periods WHERE assignment_id = ? ORDER BY position, id`,[e])}function Og(e){let t=bh(`SELECT student_id, value, weight FROM (
        SELECT g.student_id AS student_id, g.value AS value, a.weight AS weight
        FROM grades g
        JOIN activities a ON a.id = g.activity_id
