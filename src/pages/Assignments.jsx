@@ -52,6 +52,7 @@ export default function Assignments({ navigate }) {
   const [form, setForm] = useState(null)
   const [scheduleAssignment, setScheduleAssignment] = useState(null)
   const [slotForm, setSlotForm] = useState({ ...EMPTY_SLOT })
+  const [yearFilter, setYearFilter] = useState(String(getDefaultSchoolYear()))
 
   const assignments = useSqlQuery(
     `SELECT a.*, c.name AS course_name, c.division, c.school_id,
@@ -97,16 +98,27 @@ export default function Assignments({ navigate }) {
     return map
   }, [slots])
 
+  const availableYears = useMemo(() => {
+    const years = new Set(assignments.map((item) => String(item.school_year)))
+    years.add(String(getDefaultSchoolYear()))
+    return [...years].sort((a, b) => Number(b) - Number(a))
+  }, [assignments])
+
+  const filteredAssignments = useMemo(() => {
+    if (yearFilter === 'all') return assignments
+    return assignments.filter((item) => String(item.school_year) === String(yearFilter))
+  }, [assignments, yearFilter])
+
   const grouped = useMemo(() => {
     const groups = new Map()
-    for (const assignment of assignments) {
+    for (const assignment of filteredAssignments) {
       if (!groups.has(assignment.school_name)) {
         groups.set(assignment.school_name, [])
       }
       groups.get(assignment.school_name).push(assignment)
     }
     return [...groups.entries()]
-  }, [assignments])
+  }, [filteredAssignments])
 
   const scheduleSlots = scheduleAssignment
     ? slotsByAssignment.get(scheduleAssignment.id) ?? []
@@ -352,7 +364,26 @@ export default function Assignments({ navigate }) {
         </Card>
       ) : null}
 
-      {assignments.length === 0 ? (
+      <Card className="filter-card">
+        <div className="filter-row">
+          <Field label="Año lectivo">
+            <select
+              className="input"
+              value={yearFilter}
+              onChange={(event) => setYearFilter(event.target.value)}
+            >
+              <option value="all">Todos los años</option>
+              {availableYears.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      </Card>
+
+      {filteredAssignments.length === 0 ? (
         <Card>
           <EmptyState
             icon="graduation"
