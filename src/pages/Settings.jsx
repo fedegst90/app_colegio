@@ -5,6 +5,8 @@ import {
   importDatabaseBytes,
   persistNow,
   resetDatabase,
+  all,
+  run,
   setSetting,
 } from '../db/database'
 import { useSqlQuery } from '../hooks/useSqlQuery'
@@ -40,7 +42,7 @@ const EMPTY_COURSE = {
 }
 
 export default function Settings() {
-  const { mutate, refresh } = useData()
+  const { mutate, mutateMany, refresh } = useData()
   const toast = useToast()
   const [tab, setTab] = useState('colegios')
   const [schoolForm, setSchoolForm] = useState(null)
@@ -53,6 +55,8 @@ export default function Settings() {
   const [defaultYear, setDefaultYear] = useState(() =>
     getSetting('default_school_year', String(new Date().getFullYear())),
   )
+  const [newSchoolYear, setNewSchoolYear] = useState(String(new Date().getFullYear() + 1))
+  const [sourceSchoolYear, setSourceSchoolYear] = useState('')
   const [teacherName, setTeacherName] = useState(() =>
     getSetting('teacher_name', ''),
   )
@@ -95,6 +99,10 @@ export default function Settings() {
      FROM courses c
      JOIN schools sh ON sh.id = c.school_id
      ORDER BY sh.name COLLATE NOCASE, c.year, c.name COLLATE NOCASE`,
+  )
+
+  const schoolYears = useSqlQuery(
+    `SELECT DISTINCT school_year FROM assignments ORDER BY school_year DESC`,
   )
 
   const calendarExceptions = useSqlQuery(
@@ -359,6 +367,145 @@ export default function Settings() {
     setSetting('default_school_year', defaultYear)
     refresh()
     toast('Preferencias guardadas.')
+  }
+
+  function adjustYearInDate(value, targetYear) {
+    const text = String(value ?? '').trim()
+    if (!text || text.length < 4) return text
+    if (!/^\d{4}/.test(text)) return text
+    return `${targetYear}${text.slice(4)}`
+  }
+
+  function createSchoolYear() {
+    const target = Number(newSchoolYear)
+    if (!Number.isInteger(target) || target < 2000 || target > 2100) {
+      toast('Indicá un año lectivo válido.', 'error')
+      return
+    }
+    const source = sourceSchoolYear ? Number(sourceSchoolYear) : null
+    const confirmed = window.confirm(
+      source
+        ? `¿Crear el año ${target} copiando las cátedras del año ${source}? (No se copian alumnos.)`
+        : `¿Crear el año ${target} sin copiar datos?`,
+    )
+    if (!confirmed) return
+
+    mutateMany(() => {
+      if (source) {
+        const assignments = allAssignmentsForYear(source)
+        for (const assignment of assignments) {
+          const duplicate = get(
+            `SELECT id FROM assignments
+             WHERE course_id = ? AND subject_id = ? AND school_year = ?`,
+            [assignment.course_id, assignment.subject_id, target],
+          )
+          if (duplicate) continue
+
+          const newAssignmentId = run(
+            `INSERT INTO assignments
+              (course_id, subject_id, period_type, school_year, start_date,
+               end_date, passing_grade, notes)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              assignment.course_id,
+              assignment.subject_id,
+              assignment.period_type,
+              target,
+              `${target}-03-01`,
+              `${target}-12-20`,
+              assignment.passing_grade,
+              assignment.notes,
+            ],
+          )
+
+          const periods = rawAllPeriods(assignment.id)
+          const periodIdMap = {}
+          for (const period of periods) {
+            const newPeriodId = run(
+              `INSERT INTO periods
+                (assignment_id, name, position, start_date, end_date)
+               VALUES (?, ?, ?, ?, ?)`,
+              [
+                newAssignmentId,
+                period.name,
+                period.position,
+                adjustYearInDate(period.start_date, target),
+                adjustYearInDate(period.end_date, target),
+              ],
+            )
+            periodIdMap[period.id] = newPeriodId
+          }
+
+          const topics = rawAllTopics(assignment.id)
+          const topicIdMap = {}
+          for (const topic of topics) {
+            const newTopicId = run(
+              `INSERT INTO topics
+                (assignment_id, position, title, description, objectives, class_count)
+               VALUES (?, ?, ?, ?, ?, ?)`,
+              [
+                newAssignmentId,
+                topic.position,
+                topic.title,
+                topic.description,
+                topic.objectives,
+                topic.class_count,
+              ],
+            )
+            topicIdMap[topic.id] = newTopicId
+          }
+
+          const slots = rawAllSlots(assignment.id)
+          for (const slot of slots) {
+            run(
+              `INSERT INTO schedule_slots
+                (assignment_id, weekday, start_time, end_time, room)
+               VALUES (?, ?, ?, ?, ?)`,
+              [
+                newAssignmentId,
+                slot.weekday,
+                slot.start_time,
+                slot.end_time,
+                slot.room,
+              ],
+            )
+          }
+
+          const plans = rawAllPlans(assignment.id)
+          for (const plan of plans) {
+            run(
+              `INSERT INTO plans
+                (assignment_id, topic_id, activity_id, date, start_time,
+                 end_time, title, description, status, source, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+              [
+                newAssignmentId,
+                plan.topic_id ? topicIdMap[plan.topic_id] ?? null : null,
+                null,
+                adjustYearInDate(plan.date, target),
+                plan.start_time,
+                plan.end_time,
+                plan.title,
+                plan.description,
+                plan.status,
+                plan.source,
+              ],
+            )
+          }
+        }
+      }
+
+      setSetting('default_school_year', String(target))
+    })
+
+    setDefaultYear(String(target))
+    setCalendarYear(String(target))
+    refresh()
+    toast(
+      source
+        ? `Año ${target} creado copiando las cátedras del ${source}.`
+        : `Año ${target} creado.`,
+    )
   }
 
   function saveTeacher(event) {
@@ -866,6 +1013,48 @@ export default function Settings() {
                 </button>
               </div>
             </form>
+          </Card>
+
+          <Card>
+            <CardHeader
+              title="Año lectivo"
+              subtitle="Creá un nuevo año y, si querés, copiá las cátedras del año anterior. Los alumnos no se copian."
+            />
+            <div className="form-grid">
+              <Field label="Nuevo año lectivo">
+                <input
+                  className="input"
+                  type="number"
+                  min="2000"
+                  max="2100"
+                  value={newSchoolYear}
+                  onChange={(event) => setNewSchoolYear(event.target.value)}
+                />
+              </Field>
+              <Field label="Copiar cátedras desde" hint="Opcional">
+                <select
+                  className="input"
+                  value={sourceSchoolYear}
+                  onChange={(event) => setSourceSchoolYear(event.target.value)}
+                >
+                  <option value="">Sin copiar</option>
+                  {schoolYears.map((row) => (
+                    <option key={row.school_year} value={row.school_year}>
+                      {row.school_year}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+            <div className="form-actions full">
+              <button
+                type="button"
+                className="btn primary"
+                onClick={createSchoolYear}
+              >
+                Crear año lectivo
+              </button>
+            </div>
           </Card>
 
           <Card className="danger-zone">
