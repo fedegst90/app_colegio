@@ -247,7 +247,7 @@ FIREBASE: `))}restoreState_(){this.tryAuth(),this.tryAppCheck();for(let e of thi
      LEFT JOIN topics t ON t.id = pl.topic_id
      WHERE pl.assignment_id = ? AND pl.date >= ?
      ORDER BY pl.date, pl.start_time
-     LIMIT ?`,[e,lg(),t])}function Ig(){return Number(Th(`default_school_year`,String(new Date().getFullYear())))}function Lg(){return Number(Th(`default_passing_grade`,`6`))}var Rg={pendiente:`Pendiente`,en_curso:`En curso`,completada:`Completada`};function zg({navigate:e}){let{version:t}=jh(),[n,r]=(0,_.useState)(()=>localStorage.getItem(`selectedAssignmentId`)||``),i=getDefaultSchoolYear(),a=(0,_.useMemo)(()=>Ng(i),[t,i]),o=tg(`SELECT a.*, c.name AS course_name, c.division,
+     LIMIT ?`,[e,lg(),t])}function Ig(){return Number(Th(`default_school_year`,String(new Date().getFullYear())))}function Lg(){return Number(Th(`default_passing_grade`,`6`))}var Rg={pendiente:`Pendiente`,en_curso:`En curso`,completada:`Completada`};function zg({navigate:e}){let{version:t}=jh(),[n,r]=(0,_.useState)(()=>localStorage.getItem(`selectedAssignmentId`)||``),i=Ig(),a=(0,_.useMemo)(()=>Ng(i),[t,i]),o=tg(`SELECT a.*, c.name AS course_name, c.division,
             sh.name AS school_name,
             sub.name AS subject_name, sub.color AS subject_color
      FROM assignments a
