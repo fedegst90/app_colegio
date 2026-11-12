@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-export function RichTextEditor({ value, onChange, placeholder }) {
+export function RichTextEditor({ value, onChange, placeholder, minHeight = 140, expandOnFocus = false }) {
   const ref = useRef(null)
   const lastValue = useRef(undefined)
 
@@ -38,7 +38,7 @@ export function RichTextEditor({ value, onChange, placeholder }) {
   }
 
   return (
-    <div className="rich-editor">
+    <div className={`rich-editor ${expandOnFocus ? 'rich-editor-expand' : ''}`}>
       <div className="rich-toolbar" role="toolbar">
         <button
           type="button"
@@ -167,6 +167,7 @@ export function RichTextEditor({ value, onChange, placeholder }) {
       <div
         ref={ref}
         className="rich-content"
+        style={{ minHeight }}
         contentEditable
         suppressContentEditableWarning
         onInput={handleInput}

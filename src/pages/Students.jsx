@@ -297,19 +297,6 @@ export default function Students({ navigate, params = {} }) {
               ))}
             </select>
           </Field>
-          <Field label="Año lectivo">
-            <select
-              className="input"
-              value={schoolYear}
-              onChange={(event) => setSchoolYear(event.target.value)}
-            >
-              {yearOptions.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </Field>
           <Field label="Buscar" className="grow">
             <input
               className="input"

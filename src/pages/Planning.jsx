@@ -620,6 +620,7 @@ export default function Planning({ navigate, params = {} }) {
                   setPlanForm((current) => ({ ...current, description: value }))
                 }
                 placeholder="Actividades, recursos, consignas, evaluación prevista…"
+                expandOnFocus
               />
             </div>
             <Field label="Estado">

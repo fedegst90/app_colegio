@@ -250,6 +250,7 @@ export default function Program({ navigate, params = {} }) {
                   setTopicForm((current) => ({ ...current, objectives: value }))
                 }
                 placeholder="Qué se espera que logren los alumnos"
+                minHeight={240}
               />
             </div>
           </form>

@@ -3845,3 +3845,7 @@ textarea.input {
     gap: 12px;
   }
 }
+
+.rich-editor-expand:focus-within .rich-content {
+  min-height: 280px;
+}
