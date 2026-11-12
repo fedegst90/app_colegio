@@ -421,16 +421,50 @@ export default function Settings() {
 
     mutateMany(() => {
       run('INSERT OR IGNORE INTO school_years (year, description) VALUES (?, ?)', [target, ''])
+      const schoolIdMap = {}
+      const subjectIdMap = {}
+      const courseIdMap = {}
       if (source) {
+        // Copiar colegios.
+        const schools = all('SELECT * FROM schools WHERE school_year = ?', [source])
+        for (const school of schools) {
+          const newSchoolId = run(
+            'INSERT INTO schools (school_year, name, address, notes) VALUES (?, ?, ?, ?)',
+            [target, school.name, school.address, school.notes],
+          )
+          schoolIdMap[school.id] = newSchoolId
+        }
+        // Copiar materias.
+        const subjects = all('SELECT * FROM subjects WHERE school_year = ?', [source])
+        for (const subject of subjects) {
+          const newSubjectId = run(
+            'INSERT INTO subjects (school_year, name, code, color, description) VALUES (?, ?, ?, ?, ?)',
+            [target, subject.name, subject.code, subject.color, subject.description],
+          )
+          subjectIdMap[subject.id] = newSubjectId
+        }
+        // Copiar cursos.
+        const courses = all('SELECT * FROM courses WHERE school_year = ?', [source])
+        for (const course of courses) {
+          const newSchoolId = schoolIdMap[course.school_id] ?? course.school_id
+          const newCourseId = run(
+            'INSERT INTO courses (school_year, school_id, name, year, division, notes) VALUES (?, ?, ?, ?, ?, ?)',
+            [target, newSchoolId, course.name, course.year, course.division, course.notes],
+          )
+          courseIdMap[course.id] = newCourseId
+        }
+
         const assignments = all(
           'SELECT * FROM assignments WHERE school_year = ?',
           [source],
         )
         for (const assignment of assignments) {
+          const newCourseId = courseIdMap[assignment.course_id] ?? assignment.course_id
+          const newSubjectId = subjectIdMap[assignment.subject_id] ?? assignment.subject_id
           const duplicate = get(
             `SELECT id FROM assignments
              WHERE course_id = ? AND subject_id = ? AND school_year = ?`,
-            [assignment.course_id, assignment.subject_id, target],
+            [newCourseId, newSubjectId, target],
           )
           if (duplicate) continue
 
@@ -440,8 +474,8 @@ export default function Settings() {
                end_date, passing_grade, notes)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [
-              assignment.course_id,
-              assignment.subject_id,
+              newCourseId,
+              newSubjectId,
               assignment.period_type,
               target,
               `${target}-03-01`,
