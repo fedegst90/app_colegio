@@ -41,7 +41,7 @@ const EMPTY_ACTIVITY = {
 }
 
 export default function Grades({ navigate, params = {} }) {
-  const { mutate } = useData()
+  const { mutate, mutateMany } = useData()
   const toast = useToast()
   const [assignmentId, setAssignmentId] = useState(() => {
     if (params.assignment) return String(params.assignment)
@@ -54,6 +54,7 @@ export default function Grades({ navigate, params = {} }) {
   const [groupCount, setGroupCount] = useState('4')
   const [groupMode, setGroupMode] = useState('balanced')
   const [randomSeed, setRandomSeed] = useState(0)
+  const [groupActivityId, setGroupActivityId] = useState('')
 
   const periodTableRef = useRef(null)
   const annualTableRef = useRef(null)
@@ -366,6 +367,30 @@ export default function Grades({ navigate, params = {} }) {
         [period.id, studentId, concept, grade, weight],
       )
     }
+  }
+
+  function saveGroupsToActivity() {
+    const activityId = Number(groupActivityId)
+    if (!activityId) {
+      toast('Seleccioná una actividad.', 'error')
+      return
+    }
+    if (generatedGroups.length === 0) {
+      toast('Generá grupos primero.', 'error')
+      return
+    }
+    mutateMany(() => {
+      run('DELETE FROM activity_groups WHERE activity_id = ?', [activityId])
+      generatedGroups.forEach((group, index) => {
+        for (const student of group.students) {
+          run(
+            'INSERT OR REPLACE INTO activity_groups (activity_id, student_id, group_number) VALUES (?, ?, ?)',
+            [activityId, student.id, index + 1],
+          )
+        }
+      })
+    })
+    toast('Grupos guardados en la actividad.')
   }
 
   function openConcept(student) {
@@ -1342,6 +1367,27 @@ export default function Grades({ navigate, params = {} }) {
                   }}
                 >
                   Mezcla aleatoria
+                </button>
+                <Field label="Guardar en actividad">
+                  <select
+                    className="input input-compact"
+                    value={groupActivityId}
+                    onChange={(event) => setGroupActivityId(event.target.value)}
+                  >
+                    <option value="">Seleccionar actividad…</option>
+                    {activities.map((activity) => (
+                      <option key={activity.id} value={activity.id}>
+                        {activity.name}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <button
+                  type="button"
+                  className="btn primary"
+                  onClick={saveGroupsToActivity}
+                >
+                  Guardar grupos
                 </button>
               </div>
             }

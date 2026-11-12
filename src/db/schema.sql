@@ -154,6 +154,14 @@ CREATE INDEX IF NOT EXISTS idx_assignments_course ON assignments(course_id);
 CREATE INDEX IF NOT EXISTS idx_assignments_subject ON assignments(subject_id);
 CREATE INDEX IF NOT EXISTS idx_periods_assignment ON periods(assignment_id);
 CREATE INDEX IF NOT EXISTS idx_activities_period ON activities(period_id);
+CREATE TABLE IF NOT EXISTS activity_groups (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  activity_id INTEGER NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
+  student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  group_number INTEGER NOT NULL,
+  UNIQUE (activity_id, student_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_grades_activity ON grades(activity_id);
 CREATE INDEX IF NOT EXISTS idx_evaluations_period ON evaluations(period_id);
 CREATE INDEX IF NOT EXISTS idx_topics_assignment ON topics(assignment_id);

@@ -111,6 +111,16 @@ function migrateSchoolYearsTable() {
   }
 }
 
+function migrateActivityGroupsTable() {
+  rawRun(`CREATE TABLE IF NOT EXISTS activity_groups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    activity_id INTEGER NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
+    student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    group_number INTEGER NOT NULL,
+    UNIQUE (activity_id, student_id)
+  )`)
+}
+
 function migrateSchoolYearColumns() {
   addColumn('schools', 'school_year', 'INTEGER NOT NULL DEFAULT 2026')
   addColumn('subjects', 'school_year', 'INTEGER NOT NULL DEFAULT 2026')
@@ -208,6 +218,7 @@ function upgradeSchema() {
   migrateTopicsToAssignments()
   migratePlanningSchema()
   migrateSchoolYearColumns()
+  migrateActivityGroupsTable()
   migrateSchoolYearsTable()
   applySchema()
   rawRun(`PRAGMA user_version = ${SCHEMA_VERSION}`)
