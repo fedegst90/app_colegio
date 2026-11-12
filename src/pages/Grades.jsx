@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useData } from '../context/data-context'
-import { getSetting } from '../db/database'
+import { getSetting, run } from '../db/database'
 import { jsPDF } from 'jspdf'
 import { useSqlQuery } from '../hooks/useSqlQuery'
 import { useToast } from '../context/toast-context'
