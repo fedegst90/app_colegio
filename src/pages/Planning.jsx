@@ -86,6 +86,15 @@ export default function Planning({ navigate, params = {} }) {
     }
   }, [assignments, assignmentId, assignment])
 
+  const planFormGroups = useSqlQuery(
+    `SELECT ag.group_number, st.first_name, st.last_name
+     FROM activity_groups ag
+     JOIN students st ON st.id = ag.student_id
+     WHERE ag.activity_id = ?
+     ORDER BY ag.group_number, st.last_name COLLATE NOCASE, st.first_name COLLATE NOCASE`,
+    [planForm?.activity_id ? Number(planForm.activity_id) : 0],
+  )
+
   const detailGroups = useSqlQuery(
     `SELECT ag.group_number, st.first_name, st.last_name
      FROM activity_groups ag
@@ -621,6 +630,34 @@ export default function Planning({ navigate, params = {} }) {
                 Solo se listan las actividades que no están vinculadas a otra clase.
               </small>
             </Field>
+            {planForm.activity_id && planFormGroups.length > 0 ? (
+              <div className="form-note full">
+                <strong>Grupos de la actividad seleccionada</strong>
+                <div className="entity-grid" style={{ marginTop: 8 }}>
+                  {Object.entries(
+                    planFormGroups.reduce((acc, row) => {
+                      if (!acc[row.group_number]) acc[row.group_number] = []
+                      acc[row.group_number].push(row)
+                      return acc
+                    }, {}),
+                  ).map(([groupNumber, members]) => (
+                    <article className="entity-card" key={groupNumber}>
+                      <div className="entity-top">
+                        <strong>Grupo {groupNumber}</strong>
+                        <Badge tone="neutral">{members.length}</Badge>
+                      </div>
+                      <ul className="group-member-list">
+                        {members.map((member, idx) => (
+                          <li key={idx}>
+                            {member.last_name}, {member.first_name}
+                          </li>
+                        ))}
+                      </ul>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <div className="field full">
               <span className="field-label">Desarrollo de la clase</span>
               <RichTextEditor
