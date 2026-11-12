@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useData } from '../context/data-context'
+import { getSetting } from '../db/database'
 import { jsPDF } from 'jspdf'
 import { useSqlQuery } from '../hooks/useSqlQuery'
 import { useToast } from '../context/toast-context'
@@ -496,17 +497,28 @@ export default function Grades({ navigate, params = {} }) {
     if (!assignment) return
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
     const pageWidth = doc.internal.pageSize.getWidth()
+    const teacherName = getSetting('teacher_name', '')
+    const teacherEmail = getSetting('teacher_email', '')
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(14)
     doc.text('Reporte de notas - ' + (period?.name ?? 'Período'), 10, 12)
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(10)
-    doc.text(
-      `${assignment.subject_name} · ${assignment.course_name} · ${assignment.school_name} · Año ${assignment.school_year}`,
-      10,
-      18,
-    )
-    doc.text(`Aprueba con ${Number(assignment.passing_grade)}`, 10, 23)
+    let infoY = 18
+    const infoLines = [
+      `Colegio: ${assignment.school_name}`,
+      `Docente: ${teacherName || '-'}`,
+      `Correo: ${teacherEmail || '-'}`,
+      `Materia: ${assignment.subject_name}`,
+      `Curso: ${assignment.course_name}`,
+      `Año lectivo: ${assignment.school_year}`,
+      `Aprueba con: ${Number(assignment.passing_grade)}`,
+    ]
+    infoLines.forEach((line) => {
+      doc.text(line, 10, infoY)
+      infoY += 5
+    })
+    const tableStart = infoY + 2
 
     const headers = [
       'Alumno',
@@ -544,24 +556,35 @@ export default function Grades({ navigate, params = {} }) {
     ])
 
     const colWidths = [34, ...activities.map(() => 16), 26, 14]
-    drawPdfTable(doc, 28, headers, rows, colWidths, 8)
+    drawPdfTable(doc, tableStart, headers, rows, colWidths, 8)
     doc.save(`reporte-${safeName(period?.name ?? 'periodo')}.pdf`)
   }
 
   function exportAnnualPdf() {
     if (!assignment || !yearResults) return
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const teacherName = getSetting('teacher_name', '')
+    const teacherEmail = getSetting('teacher_email', '')
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(14)
     doc.text('Resumen anual', 10, 12)
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(10)
-    doc.text(
-      `${assignment.subject_name} · ${assignment.course_name} · ${assignment.school_name} · Año ${assignment.school_year}`,
-      10,
-      18,
-    )
-    doc.text(`Aprueba con ${Number(assignment.passing_grade)}`, 10, 23)
+    let infoY = 18
+    const infoLines = [
+      `Colegio: ${assignment.school_name}`,
+      `Docente: ${teacherName || '-'}`,
+      `Correo: ${teacherEmail || '-'}`,
+      `Materia: ${assignment.subject_name}`,
+      `Curso: ${assignment.course_name}`,
+      `Año lectivo: ${assignment.school_year}`,
+      `Aprueba con: ${Number(assignment.passing_grade)}`,
+    ]
+    infoLines.forEach((line) => {
+      doc.text(line, 10, infoY)
+      infoY += 5
+    })
+    const tableStart = infoY + 2
 
     const headers = [
       'Alumno',
@@ -581,7 +604,7 @@ export default function Grades({ navigate, params = {} }) {
     ])
 
     const colWidths = [34, ...yearResults.periods.map(() => 18), 18, 20]
-    drawPdfTable(doc, 28, headers, rows, colWidths, 8)
+    drawPdfTable(doc, tableStart, headers, rows, colWidths, 8)
     doc.save('reporte-resumen-anual.pdf')
   }
 
