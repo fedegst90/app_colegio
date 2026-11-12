@@ -3846,6 +3846,6 @@ textarea.input {
   }
 }
 
-.rich-editor-expand:focus-within .rich-content {
+.rich-editor-expanded .rich-content {
   min-height: 280px;
 }

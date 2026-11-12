@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export function RichTextEditor({ value, onChange, placeholder, minHeight = 140, expandOnFocus = false }) {
   const ref = useRef(null)
   const lastValue = useRef(undefined)
+  const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
     if (!ref.current) return
@@ -38,7 +39,12 @@ export function RichTextEditor({ value, onChange, placeholder, minHeight = 140, 
   }
 
   return (
-    <div className={`rich-editor ${expandOnFocus ? 'rich-editor-expand' : ''}`}>
+    <div
+      className={`rich-editor ${expandOnFocus ? 'rich-editor-expand' : ''} ${expanded ? 'rich-editor-expanded' : ''}`}
+      onClick={() => expandOnFocus && setExpanded(true)}
+      onFocus={() => expandOnFocus && setExpanded(true)}
+      onBlur={() => expandOnFocus && setExpanded(false)}
+    >
       <div className="rich-toolbar" role="toolbar">
         <button
           type="button"
