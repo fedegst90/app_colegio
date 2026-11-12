@@ -3849,3 +3849,7 @@ textarea.input {
 .rich-editor-expanded .rich-content {
   min-height: 280px;
 }
+
+.groups-toolbar {
+  margin-bottom: 18px;
+}

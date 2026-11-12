@@ -1312,86 +1312,84 @@ export default function Grades({ navigate, params = {} }) {
           <CardHeader
             title="Grupos de alumnos"
             subtitle="Distribución equilibrada por notas. Cada grupo intenta tener al menos un alumno con buenas calificaciones."
-            actions={
-              <div className="inline-actions">
-                <Field label="Cantidad de grupos">
-                  <input
-                    className="input input-compact"
-                    type="number"
-                    min="1"
-                    max={Math.max(1, students.length)}
-                    value={groupCount}
-                    onChange={(event) => setGroupCount(event.target.value)}
-                  />
-                </Field>
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => {
-                    const requested = Number(groupCount)
-                    if (!Number.isFinite(requested) || requested < 1) {
-                      toast('Indicá una cantidad válida de grupos.', 'error')
-                      return
-                    }
-                    if (requested > groupStudents.length) {
-                      toast(
-                        'La cantidad de grupos no puede superar la cantidad de alumnos.',
-                        'error',
-                      )
-                      return
-                    }
-                    setGroupMode('balanced')
-                    setRandomSeed((value) => value + 1)
-                  }}
-                >
-                  Distribuir equilibrado
-                </button>
-                <button
-                  type="button"
-                  className="btn primary"
-                  onClick={() => {
-                    const requested = Number(groupCount)
-                    if (!Number.isFinite(requested) || requested < 1) {
-                      toast('Indicá una cantidad válida de grupos.', 'error')
-                      return
-                    }
-                    if (requested > groupStudents.length) {
-                      toast(
-                        'La cantidad de grupos no puede superar la cantidad de alumnos.',
-                        'error',
-                      )
-                      return
-                    }
-                    setGroupMode('random')
-                    setRandomSeed((value) => value + 1)
-                  }}
-                >
-                  Mezcla aleatoria
-                </button>
-                <Field label="Guardar en actividad">
-                  <select
-                    className="input input-compact"
-                    value={groupActivityId}
-                    onChange={(event) => setGroupActivityId(event.target.value)}
-                  >
-                    <option value="">Seleccionar actividad…</option>
-                    {activities.map((activity) => (
-                      <option key={activity.id} value={activity.id}>
-                        {activity.name}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <button
-                  type="button"
-                  className="btn primary"
-                  onClick={saveGroupsToActivity}
-                >
-                  Guardar grupos
-                </button>
-              </div>
-            }
           />
+          <div className="inline-actions groups-toolbar">
+            <Field label="Cantidad de grupos">
+              <input
+                className="input input-compact"
+                type="number"
+                min="1"
+                max={Math.max(1, students.length)}
+                value={groupCount}
+                onChange={(event) => setGroupCount(event.target.value)}
+              />
+            </Field>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                const requested = Number(groupCount)
+                if (!Number.isFinite(requested) || requested < 1) {
+                  toast('Indicá una cantidad válida de grupos.', 'error')
+                  return
+                }
+                if (requested > groupStudents.length) {
+                  toast(
+                    'La cantidad de grupos no puede superar la cantidad de alumnos.',
+                    'error',
+                  )
+                  return
+                }
+                setGroupMode('balanced')
+                setRandomSeed((value) => value + 1)
+              }}
+            >
+              Distribuir equilibrado
+            </button>
+            <button
+              type="button"
+              className="btn primary"
+              onClick={() => {
+                const requested = Number(groupCount)
+                if (!Number.isFinite(requested) || requested < 1) {
+                  toast('Indicá una cantidad válida de grupos.', 'error')
+                  return
+                }
+                if (requested > groupStudents.length) {
+                  toast(
+                    'La cantidad de grupos no puede superar la cantidad de alumnos.',
+                    'error',
+                  )
+                  return
+                }
+                setGroupMode('random')
+                setRandomSeed((value) => value + 1)
+              }}
+            >
+              Mezcla aleatoria
+            </button>
+            <Field label="Guardar en actividad">
+              <select
+                className="input input-compact"
+                value={groupActivityId}
+                onChange={(event) => setGroupActivityId(event.target.value)}
+              >
+                <option value="">Seleccionar actividad…</option>
+                {activities.map((activity) => (
+                  <option key={activity.id} value={activity.id}>
+                    {activity.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <button
+              type="button"
+              className="btn primary"
+              onClick={saveGroupsToActivity}
+            >
+              Guardar grupos
+            </button>
+          </div>
           {groupStudents.length === 0 ? (
             <EmptyState
               icon="users"
