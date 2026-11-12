@@ -3853,3 +3853,10 @@ textarea.input {
 .groups-toolbar {
   margin-bottom: 18px;
 }
+
+.group-member-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.6;
+}

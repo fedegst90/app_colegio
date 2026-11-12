@@ -86,6 +86,15 @@ export default function Planning({ navigate, params = {} }) {
     }
   }, [assignments, assignmentId, assignment])
 
+  const detailGroups = useSqlQuery(
+    `SELECT ag.group_number, st.first_name, st.last_name
+     FROM activity_groups ag
+     JOIN students st ON st.id = ag.student_id
+     WHERE ag.activity_id = ?
+     ORDER BY ag.group_number, st.last_name COLLATE NOCASE, st.first_name COLLATE NOCASE`,
+    [detailPlan?.activity_id ?? 0],
+  )
+
   const topics = useSqlQuery(
     'SELECT * FROM topics WHERE assignment_id = ? ORDER BY position, id',
     [assignment?.id ?? 0],
@@ -1101,6 +1110,35 @@ export default function Planning({ navigate, params = {} }) {
                 </p>
               ) : null}
             </Card>
+
+            {detailPlan.activity_id && detailGroups.length > 0 ? (
+              <Card>
+                <CardHeader title="Grupos de la actividad" />
+                <div className="entity-grid">
+                  {Object.entries(
+                    detailGroups.reduce((acc, row) => {
+                      if (!acc[row.group_number]) acc[row.group_number] = []
+                      acc[row.group_number].push(row)
+                      return acc
+                    }, {}),
+                  ).map(([groupNumber, members]) => (
+                    <article className="entity-card" key={groupNumber}>
+                      <div className="entity-top">
+                        <strong>Grupo {groupNumber}</strong>
+                        <Badge tone="neutral">{members.length}</Badge>
+                      </div>
+                      <ul className="group-member-list">
+                        {members.map((member, idx) => (
+                          <li key={idx}>
+                            {member.last_name}, {member.first_name}
+                          </li>
+                        ))}
+                      </ul>
+                    </article>
+                  ))}
+                </div>
+              </Card>
+            ) : null}
 
             <Card>
               <CardHeader title="Contenido del tema" />
