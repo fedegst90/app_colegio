@@ -181,6 +181,95 @@ export default function Program({ navigate, params = {} }) {
     )
   }
 
+  if (topicForm) {
+    return (
+      <div className="page-stack">
+        <PageHeader
+          eyebrow="Programa"
+          title={topicForm.id ? 'Editar tema' : 'Nuevo tema'}
+          description={
+            assignment
+              ? `${assignment.subject_name} · ${assignment.course_name}`
+              : ''
+          }
+          actions={
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={() => setTopicForm(null)}
+            >
+              Volver
+            </button>
+          }
+        />
+        <Card>
+          <form id="topic-form" className="form-grid" onSubmit={saveTopic}>
+            <Field label="Título del tema" className="full">
+              <input
+                className="input"
+                value={topicForm.title}
+                onChange={(event) =>
+                  setTopicForm({ ...topicForm, title: event.target.value })
+                }
+                placeholder="Ej. La Revolución Francesa"
+                autoFocus
+              />
+            </Field>
+            <Field
+              label="Clases estimadas"
+              hint="Cuántos encuentros le vas a dedicar a este tema."
+              className="full"
+            >
+              <input
+                className="input"
+                type="number"
+                min="1"
+                step="1"
+                value={topicForm.class_count}
+                onChange={(event) =>
+                  setTopicForm({ ...topicForm, class_count: event.target.value })
+                }
+              />
+            </Field>
+            <Field label="Contenidos" className="full">
+              <textarea
+                className="input"
+                rows="4"
+                value={topicForm.description}
+                onChange={(event) =>
+                  setTopicForm({ ...topicForm, description: event.target.value })
+                }
+                placeholder="Contenidos, conceptos y actividades previstas"
+              />
+            </Field>
+            <div className="field full">
+              <span className="field-label">Objetivos de aprendizaje</span>
+              <RichTextEditor
+                value={topicForm.objectives}
+                onChange={(value) =>
+                  setTopicForm((current) => ({ ...current, objectives: value }))
+                }
+                placeholder="Qué se espera que logren los alumnos"
+              />
+            </div>
+          </form>
+          <div className="form-actions full">
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={() => setTopicForm(null)}
+            >
+              Cancelar
+            </button>
+            <button type="submit" form="topic-form" className="btn primary">
+              Guardar
+            </button>
+          </div>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="page-stack">
       <PageHeader
@@ -330,84 +419,6 @@ export default function Program({ navigate, params = {} }) {
         )}
       </Card>
 
-      <Modal
-        open={Boolean(topicForm)}
-        title={topicForm?.id ? 'Editar tema' : 'Nuevo tema'}
-        description={
-          assignment
-            ? `${assignment.subject_name} · ${assignment.course_name}`
-            : ''
-        }
-        onClose={() => setTopicForm(null)}
-        size="lg"
-        footer={
-          <>
-            <button
-              type="button"
-              className="btn ghost"
-              onClick={() => setTopicForm(null)}
-            >
-              Cancelar
-            </button>
-            <button type="submit" form="topic-form" className="btn primary">
-              Guardar
-            </button>
-          </>
-        }
-      >
-        {topicForm ? (
-          <form id="topic-form" className="form-grid" onSubmit={saveTopic}>
-            <Field label="Título del tema" className="full">
-              <input
-                className="input"
-                value={topicForm.title}
-                onChange={(event) =>
-                  setTopicForm({ ...topicForm, title: event.target.value })
-                }
-                placeholder="Ej. La Revolución Francesa"
-                autoFocus
-              />
-            </Field>
-            <Field
-              label="Clases estimadas"
-              hint="Cuántos encuentros le vas a dedicar a este tema."
-              className="full"
-            >
-              <input
-                className="input"
-                type="number"
-                min="1"
-                step="1"
-                value={topicForm.class_count}
-                onChange={(event) =>
-                  setTopicForm({ ...topicForm, class_count: event.target.value })
-                }
-              />
-            </Field>
-            <Field label="Contenidos" className="full">
-              <textarea
-                className="input"
-                rows="4"
-                value={topicForm.description}
-                onChange={(event) =>
-                  setTopicForm({ ...topicForm, description: event.target.value })
-                }
-                placeholder="Contenidos, conceptos y actividades previstas"
-              />
-            </Field>
-            <div className="field full">
-              <span className="field-label">Objetivos de aprendizaje</span>
-              <RichTextEditor
-                value={topicForm.objectives}
-                onChange={(value) =>
-                  setTopicForm((current) => ({ ...current, objectives: value }))
-                }
-                placeholder="Qué se espera que logren los alumnos"
-              />
-            </div>
-          </form>
-        ) : null}
-      </Modal>
     </div>
   )
 }

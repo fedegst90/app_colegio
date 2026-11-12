@@ -512,7 +512,6 @@ export default function Grades({ navigate, params = {} }) {
       `Materia: ${assignment.subject_name}`,
       `Curso: ${assignment.course_name}`,
       `Año lectivo: ${assignment.school_year}`,
-      `Aprueba con: ${Number(assignment.passing_grade)}`,
     ]
     infoLines.forEach((line) => {
       doc.text(line, 10, infoY)
@@ -578,7 +577,6 @@ export default function Grades({ navigate, params = {} }) {
       `Materia: ${assignment.subject_name}`,
       `Curso: ${assignment.course_name}`,
       `Año lectivo: ${assignment.school_year}`,
-      `Aprueba con: ${Number(assignment.passing_grade)}`,
     ]
     infoLines.forEach((line) => {
       doc.text(line, 10, infoY)

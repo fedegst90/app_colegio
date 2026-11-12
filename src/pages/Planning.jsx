@@ -493,6 +493,166 @@ export default function Planning({ navigate, params = {} }) {
     )
   }
 
+  if (planForm) {
+    return (
+      <div className="page-stack">
+        <PageHeader
+          eyebrow="Planificación"
+          title={planForm.id ? 'Editar planificación' : 'Nueva clase'}
+          description={
+            assignment
+              ? `${assignment.subject_name} · ${assignment.course_name}`
+              : ''
+          }
+          actions={
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={() => setPlanForm(null)}
+            >
+              Volver
+            </button>
+          }
+        />
+        <Card>
+                    <form id="plan-form" className="form-grid" onSubmit={savePlan}>
+            <Field label="Fecha" className="full">
+              <input
+                className="input"
+                type="date"
+                value={planForm.date}
+                onChange={(event) =>
+                  setPlanForm({ ...planForm, date: event.target.value })
+                }
+              />
+            </Field>
+            <Field label="Desde">
+              <input
+                className="input"
+                type="time"
+                value={planForm.start_time}
+                onChange={(event) =>
+                  setPlanForm({ ...planForm, start_time: event.target.value })
+                }
+              />
+            </Field>
+            <Field label="Hasta">
+              <input
+                className="input"
+                type="time"
+                value={planForm.end_time}
+                onChange={(event) =>
+                  setPlanForm({ ...planForm, end_time: event.target.value })
+                }
+              />
+            </Field>
+            <Field label="Tema del programa" className="full">
+              <select
+                className="input"
+                value={planForm.topic_id}
+                onChange={(event) => handleTopicChange(event.target.value)}
+              >
+                <option value="">Sin tema asociado</option>
+                {topics.map((topic) => (
+                  <option key={topic.id} value={topic.id}>
+                    {topic.position}. {topic.title}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            {planForm.topic_id ? (
+              (() => {
+                const topic = topics.find(
+                  (item) => String(item.id) === String(planForm.topic_id),
+                )
+                if (!topic) return null
+                return (
+                  <div className="form-note full">
+                    <strong>{topic.title}</strong>
+                    {topic.description ? <p>{topic.description}</p> : null}
+                    {topic.objectives ? (
+                      <div>
+                        <b>Objetivos:</b>{' '}
+                        <span dangerouslySetInnerHTML={{ __html: topic.objectives }} />
+                      </div>
+                    ) : null}
+                  </div>
+                )
+              })()
+            ) : null}
+            <Field label="Título de la clase" className="full">
+              <input
+                className="input"
+                value={planForm.title}
+                onChange={(event) =>
+                  setPlanForm({ ...planForm, title: event.target.value })
+                }
+                placeholder="Ej. Introducción al tema y actividad inicial"
+                autoFocus
+              />
+            </Field>
+            <Field label="Actividad de notas vinculada" className="full">
+              <select
+                className="input"
+                value={planForm.activity_id}
+                onChange={(event) => handleActivityChange(event.target.value)}
+              >
+                <option value="">Sin actividad vinculada</option>
+                {availableActivities.map((activity) => (
+                  <option key={activity.id} value={activity.id}>
+                    {activity.period_name} · {activity.name}
+                    {activity.date ? ` (${formatDate(activity.date)})` : ''} · peso {activity.weight}
+                    {activity.graded_count > 0
+                      ? ` · ${activity.graded_count} nota${activity.graded_count === 1 ? '' : 's'}`
+                      : ' · sin notas'}
+                  </option>
+                ))}
+              </select>
+              <small className="field-hint">
+                Solo se listan las actividades que no están vinculadas a otra clase.
+              </small>
+            </Field>
+            <div className="field full">
+              <span className="field-label">Desarrollo de la clase</span>
+              <RichTextEditor
+                value={planForm.description}
+                onChange={(value) =>
+                  setPlanForm((current) => ({ ...current, description: value }))
+                }
+                placeholder="Actividades, recursos, consignas, evaluación prevista…"
+              />
+            </div>
+            <Field label="Estado">
+              <select
+                className="input"
+                value={planForm.status}
+                onChange={(event) =>
+                  setPlanForm({ ...planForm, status: event.target.value })
+                }
+              >
+                <option value="pendiente">Pendiente</option>
+                <option value="en_curso">En curso</option>
+                <option value="completada">Completada</option>
+              </select>
+            </Field>
+          </form>
+          <div className="form-actions full">
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={() => setPlanForm(null)}
+            >
+              Cancelar
+            </button>
+            <button type="submit" form="plan-form" className="btn primary">
+              Guardar
+            </button>
+          </div>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="page-stack">
       <PageHeader
@@ -980,155 +1140,6 @@ export default function Planning({ navigate, params = {} }) {
         ) : null}
       </Modal>
 
-      <Modal
-        open={Boolean(planForm)}
-        title={planForm?.id ? 'Editar planificación' : 'Nueva clase'}
-        description={
-          assignment
-            ? `${assignment.subject_name} · ${assignment.course_name}`
-            : ''
-        }
-        onClose={() => setPlanForm(null)}
-        size="lg"
-        footer={
-          <>
-            <button
-              type="button"
-              className="btn ghost"
-              onClick={() => setPlanForm(null)}
-            >
-              Cancelar
-            </button>
-            <button type="submit" form="plan-form" className="btn primary">
-              Guardar
-            </button>
-          </>
-        }
-      >
-        {planForm ? (
-          <form id="plan-form" className="form-grid" onSubmit={savePlan}>
-            <Field label="Fecha" className="full">
-              <input
-                className="input"
-                type="date"
-                value={planForm.date}
-                onChange={(event) =>
-                  setPlanForm({ ...planForm, date: event.target.value })
-                }
-              />
-            </Field>
-            <Field label="Desde">
-              <input
-                className="input"
-                type="time"
-                value={planForm.start_time}
-                onChange={(event) =>
-                  setPlanForm({ ...planForm, start_time: event.target.value })
-                }
-              />
-            </Field>
-            <Field label="Hasta">
-              <input
-                className="input"
-                type="time"
-                value={planForm.end_time}
-                onChange={(event) =>
-                  setPlanForm({ ...planForm, end_time: event.target.value })
-                }
-              />
-            </Field>
-            <Field label="Tema del programa" className="full">
-              <select
-                className="input"
-                value={planForm.topic_id}
-                onChange={(event) => handleTopicChange(event.target.value)}
-              >
-                <option value="">Sin tema asociado</option>
-                {topics.map((topic) => (
-                  <option key={topic.id} value={topic.id}>
-                    {topic.position}. {topic.title}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            {planForm.topic_id ? (
-              (() => {
-                const topic = topics.find(
-                  (item) => String(item.id) === String(planForm.topic_id),
-                )
-                if (!topic) return null
-                return (
-                  <div className="form-note full">
-                    <strong>{topic.title}</strong>
-                    {topic.description ? <p>{topic.description}</p> : null}
-                    {topic.objectives ? (
-                      <div>
-                        <b>Objetivos:</b>{' '}
-                        <span dangerouslySetInnerHTML={{ __html: topic.objectives }} />
-                      </div>
-                    ) : null}
-                  </div>
-                )
-              })()
-            ) : null}
-            <Field label="Título de la clase" className="full">
-              <input
-                className="input"
-                value={planForm.title}
-                onChange={(event) =>
-                  setPlanForm({ ...planForm, title: event.target.value })
-                }
-                placeholder="Ej. Introducción al tema y actividad inicial"
-                autoFocus
-              />
-            </Field>
-            <Field label="Actividad de notas vinculada" className="full">
-              <select
-                className="input"
-                value={planForm.activity_id}
-                onChange={(event) => handleActivityChange(event.target.value)}
-              >
-                <option value="">Sin actividad vinculada</option>
-                {availableActivities.map((activity) => (
-                  <option key={activity.id} value={activity.id}>
-                    {activity.period_name} · {activity.name}
-                    {activity.date ? ` (${formatDate(activity.date)})` : ''} · peso {activity.weight}
-                    {activity.graded_count > 0
-                      ? ` · ${activity.graded_count} nota${activity.graded_count === 1 ? '' : 's'}`
-                      : ' · sin notas'}
-                  </option>
-                ))}
-              </select>
-              <small className="field-hint">
-                Solo se listan las actividades que no están vinculadas a otra clase.
-              </small>
-            </Field>
-            <div className="field full">
-              <span className="field-label">Desarrollo de la clase</span>
-              <RichTextEditor
-                value={planForm.description}
-                onChange={(value) =>
-                  setPlanForm((current) => ({ ...current, description: value }))
-                }
-                placeholder="Actividades, recursos, consignas, evaluación prevista…"
-              />
-            </div>
-            <Field label="Estado">
-              <select
-                className="input"
-                value={planForm.status}
-                onChange={(event) =>
-                  setPlanForm({ ...planForm, status: event.target.value })
-                }
-              >
-                <option value="pendiente">Pendiente</option>
-                <option value="en_curso">En curso</option>
-                <option value="completada">Completada</option>
-              </select>
-            </Field>
-          </form>
-        ) : null}
-      </Modal>
     </div>
   )
 }
