@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useData } from '../context/data-context'
-import html2pdf from 'html2pdf.js'
+import { jsPDF } from 'jspdf'
 import { useSqlQuery } from '../hooks/useSqlQuery'
 import { useToast } from '../context/toast-context'
 import { Icon } from '../components/Icon'
@@ -424,48 +424,165 @@ export default function Grades({ navigate, params = {} }) {
     toast('Concepto eliminado.')
   }
 
-  async function exportPeriodPdf() {
-    const element = periodTableRef.current
-    if (!element) return
-    const previousDisplay = element.style.display
-    element.style.display = 'block'
-    const filename = `reporte-${safeName(period?.name ?? 'periodo')}.pdf`
-    try {
-      await html2pdf()
-        .set({
-          margin: [8, 8],
-          filename,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+  function drawPdfTable(doc, startY, headers, rows, colWidths, fontSize = 9) {
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const margin = 10
+    const usableWidth = pageWidth - margin * 2
+    const totalWidth = colWidths.reduce((sum, w) => sum + w, 0)
+    const scale = usableWidth / totalWidth
+    const widths = colWidths.map((w) => w * scale)
+    let y = startY
+    const lineHeight = fontSize * 0.5 + 2
+
+    function drawRow(cells, bold = false, fillColor = null) {
+      // compute row height based on wrapped text
+      const cellLines = cells.map((cell, i) => {
+        const lines = doc.splitTextToSize(String(cell ?? ''), widths[i] - 2)
+        return lines
+      })
+      const maxLines = Math.max(...cellLines.map((l) => l.length), 1)
+      const rowHeight = maxLines * lineHeight + 2
+
+      if (y + rowHeight > 285) {
+        doc.addPage()
+        y = 15
+        // redraw header
+        drawHeader()
+      }
+
+      if (fillColor) {
+        doc.setFillColor(...fillColor)
+        doc.rect(margin, y, usableWidth, rowHeight, 'F')
+      }
+
+      let x = margin
+      cells.forEach((cell, i) => {
+        doc.setFont('helvetica', bold ? 'bold' : 'normal')
+        doc.setFontSize(fontSize)
+        const lines = cellLines[i]
+        lines.forEach((line, li) => {
+          doc.text(line, x + 1, y + 4 + li * lineHeight)
         })
-        .from(element)
-        .save()
-    } finally {
-      element.style.display = previousDisplay
+        x += widths[i]
+      })
+
+      // bottom border
+      doc.setDrawColor(200, 200, 200)
+      doc.line(margin, y + rowHeight, margin + usableWidth, y + rowHeight)
+      y += rowHeight
     }
+
+    function drawHeader() {
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y, usableWidth, lineHeight + 3, 'F')
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(fontSize)
+      let x = margin
+      headers.forEach((header, i) => {
+        doc.text(String(header), x + 1, y + 4)
+        x += widths[i]
+      })
+      y += lineHeight + 3
+      doc.setDrawColor(150, 150, 150)
+      doc.line(margin, y, margin + usableWidth, y)
+    }
+
+    drawHeader()
+    rows.forEach((row) => drawRow(row))
+    return y
   }
 
-  async function exportAnnualPdf() {
-    const element = annualTableRef.current
-    if (!element) return
-    const previousDisplay = element.style.display
-    element.style.display = 'block'
-    const filename = `reporte-resumen-anual.pdf`
-    try {
-      await html2pdf()
-        .set({
-          margin: [8, 8],
-          filename,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-        })
-        .from(element)
-        .save()
-    } finally {
-      element.style.display = previousDisplay
-    }
+  function exportPeriodPdf() {
+    if (!assignment) return
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const pageWidth = doc.internal.pageSize.getWidth()
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(14)
+    doc.text('Reporte de notas - ' + (period?.name ?? 'Período'), 10, 12)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.text(
+      `${assignment.subject_name} · ${assignment.course_name} · ${assignment.school_name} · Año ${assignment.school_year}`,
+      10,
+      18,
+    )
+    doc.text(`Aprueba con ${Number(assignment.passing_grade)}`, 10, 23)
+
+    const headers = [
+      'Alumno',
+      ...activities.map((activity) => activity.name),
+      'Concepto',
+      'Final',
+    ]
+    const rows = students.map((student) => {
+      const evaluation = evaluationByStudent.get(student.id)
+      return [
+        studentFullName(student),
+        ...activities.map((activity) =>
+          formatGrade(gradeMap.get(`${activity.id}:${student.id}`)),
+        ),
+        evaluation?.concept
+          ? `${evaluation.concept} (${formatGrade(evaluation.grade)})`
+          : '',
+        formatGrade(scores.get(student.id)),
+      ]
+    })
+    // average row
+    const avgValues = activities.map((activity) => {
+      const values = students
+        .map((student) => gradeMap.get(`${activity.id}:${student.id}`))
+        .filter((value) => value !== null && value !== undefined)
+      return values.length
+        ? values.reduce((sum, value) => sum + Number(value), 0) / values.length
+        : null
+    })
+    rows.push([
+      'Promedio del período',
+      ...avgValues.map((value) => formatGrade(value)),
+      '',
+      formatGrade(periodAverage),
+    ])
+
+    const colWidths = [34, ...activities.map(() => 16), 26, 14]
+    drawPdfTable(doc, 28, headers, rows, colWidths, 8)
+    doc.save(`reporte-${safeName(period?.name ?? 'periodo')}.pdf`)
+  }
+
+  function exportAnnualPdf() {
+    if (!assignment || !yearResults) return
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(14)
+    doc.text('Resumen anual', 10, 12)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.text(
+      `${assignment.subject_name} · ${assignment.course_name} · ${assignment.school_name} · Año ${assignment.school_year}`,
+      10,
+      18,
+    )
+    doc.text(`Aprueba con ${Number(assignment.passing_grade)}`, 10, 23)
+
+    const headers = [
+      'Alumno',
+      ...yearResults.periods.map((item) => item.name),
+      'Final anual',
+      'Estado',
+    ]
+    const rows = yearResults.rows.map((row) => [
+      studentFullName(row.student),
+      ...row.periodFinals.map((value) => formatGrade(value)),
+      formatGrade(row.final),
+      row.final === null
+        ? 'Sin datos'
+        : row.approved
+          ? 'Aprobado'
+          : 'Desaprobado',
+    ])
+
+    const colWidths = [34, ...yearResults.periods.map(() => 18), 18, 20]
+    drawPdfTable(doc, 28, headers, rows, colWidths, 8)
+    doc.save('reporte-resumen-anual.pdf')
   }
 
   function exportCsv() {
